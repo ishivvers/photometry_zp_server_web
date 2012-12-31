@@ -1,0 +1,45 @@
+
+{% extends "base.html" %}
+
+{% set page_title = 'Welcome to the Photometry Server.' %}
+
+{% block content %}
+<p>	This will produce photometry estimates of requested stars
+	in all bands, and will calculate an estimated zeropoint
+	when given instrumental mags.  Please upload a space-delimited file
+	(#-commented) with the following columns:</p>
+	<ul>
+		<li> RA </li>
+		<li> DEC </li>
+		<li> Instrumental Mag (optional)</li>
+	</ul>
+
+    <label>file</label>
+    <input type="file" value="">
+
+	{{ feedback }}
+
+<!--
+<p> and select a passband from the drop-down menu.</p>
+
+<h2>Passband:</h2>
+<form>
+<select id="bandList" onchange="favBrowser()">
+  <option></option>
+  <option>u</option>
+  <option>g</option>  
+  <option>r</option>
+  <option>i</option>
+  <option>z</option>
+  <option>y</option>
+  <option>B</option>
+  <option>R</option>
+  <option>J</option>
+  <option>H</option>
+  <option>K</option>
+</select>
+</form>
+<p>Chosen: <input type="text" id="choice" size="20"></p>
+-->
+
+{% endblock %}

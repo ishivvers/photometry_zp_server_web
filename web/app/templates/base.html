@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+
+{#
+	This is the base template for the photometric ZP server, using the 
+	twitter bootstrap.
+#}
+
+<html>
+    <head>
+    <meta charset="utf-8">
+    <title>All-Sky Photometry Server</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A multi-band photometric estimate server with all-sky coverage.">
+    <meta name="author" content="Isaac Shivvers">
+
+    <link href="static/bootstrap.css" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="static/bootstrap-responsive.css" rel="stylesheet">
+	<link href="static/svg.css" rel="stylesheet">
+    </head>
+    
+    <body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="{{ url_for('show_upload') }}">All-Sky Photometric Estimates</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li class="active"><a href="{{ url_for('show_upload') }}">Upload</a></li>
+              <li><a href="{{ url_for('show_results') }}">Results</a></li>
+              <li><a href="{{ url_for('show_contact') }}">Contact</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+
+	<div class="container">
+        <h1>{{ page_title }}</h1>
+
+        <p>{%block content %}{% endblock %}</p>
+
+	</div>
+
+    </body>
+</html>

@@ -27,9 +27,13 @@ def show_upload():
 def show_results():
     '''
     The main results page, uses results.html (and base.html).
-    '''
     
-    return render_template( "results.html" )
+    Feed template several lists of source info: 
+     ra,dec
+     spectrum_id
+     [ mag estimates ]
+    '''
+    return render_template( "results.html", spec_ids=range(10,40) )
 
 
 @app.route('/contact', methods=['GET'])
@@ -39,13 +43,18 @@ def show_contact():
     '''
     return 'contacts!'
 
-@app.route('/served', methods=['GET'])
-def serve_data():
+@app.route('/servespectrum', methods=['GET'])
+def serve_spectrum():
     '''
-    Test data-server to get D3 going.
+    Loads spectrum loaded from numpy file (given a spectrum id with url?spec=value)
+    and returns it in JSON format, as a set of objects with an x (Angstroms) and y (Flam).
     '''
-    dat = np.load( '/Users/isaac/Working/code/photo_zp_server/web/app/static/pickles_uk_55.npy' )
+    f = '/Users/isaac/Working/code/photo_zp_server/web/app/static/spectra/pickles_uk_{}.npy'.format(request.args.get('spec',''))
+    dat = np.load( f )
     # push dat into a json-able format: a list of dictionaries
     json_list = [{'x': dat[0,i], 'y': dat[1,i]} for i in range(dat.shape[1])]
     return json.dumps( json_list )
 
+@app.route('/servemags', methods=['GET'])
+def serve_mags():
+    return 'serving mags'

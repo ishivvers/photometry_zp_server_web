@@ -1,53 +1,18 @@
-
 {% extends "base.html" %}
 
 {% set page_title = 'Results.' %}
 
 {% block content %}
-
-<!-- <div class="container-fluid"> -->
 <div class="container-fluid">
   <div class="row-fluid">
     <div class="span3">
       <div class="well sidebar-nav pre-scrollable">
         <ul class="nav nav-list">
           <li class="nav-header">Sources (RA,DEC)</li>
-          <li class="active"><a href="#">Link</a></li>
-		  <!-- use an onclick() js call -->
-          <li><a href="#" id="source1">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
-          <li><a href="#">Link</a></li>
+		  <!-- add class="active" to add highlighting -->
+		  {% for spec_id in spec_ids %}
+            <li><a href="#" onclick="draw_spectrum({{ spec_id }})">Source {{ loop.index }}</a></li>
+		  {% endfor %}
         </ul>
       </div><!--/.well -->
     </div><!--/span-->
@@ -57,38 +22,25 @@
       </div>
       <div class="row-fluid">
         <div class="span4">
-          <h2>Heading</h2>
-          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-          <p><a class="btn" href="#">View details &raquo;</a></p>
+          <h2>Zeropoint Estimates</h2>
+          <p>Here, I'll include the calculated ZP estimate, if given instrumental mags and a band
+	         on the previous page.  Also include info for each band of the given source.</p>
         </div><!--/span-->
-        <div class="span4">
-          <h2>Heading</h2>
-          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-          <p><a class="btn" href="#">View details &raquo;</a></p>
-        </div><!--/span-->
-        <div class="span4">
-          <h2>Heading</h2>
-          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-          <p><a class="btn" href="#">View details &raquo;</a></p>
+        <div class="span8">
+          <h2>Histogram</h2>
+		  <p>Put a histogram here (if given instrumental mags).  Otherwise, include and image
+			 of the selected source.</p>
         </div><!--/span-->
       </div><!--/row-->
     </div><!--/span-->
   </div><!--/row-->
+</div><!--/container-->
 
 <!-- Load all js -->
 <script src="static/d3.v2.js"></script>
-<!-- HANDLING SOURCE SELECTIONS -->
-<script type="text/javascript">
- function form_send( form_id ){
-   f=document.getElementById( form_id );
-   if(f){
-     f.submit();
-     }
-   }
- </script>
 
 <!-- THE LINE PLOT -->
-<script type="text/jacascript">
+<script type="text/javascript">
 // margins & size
 var margin = {top: 10, right: 10, bottom: 10, left: 70},
     width = 600 - margin.left - margin.right,
@@ -133,17 +85,19 @@ svg.append("path")
     .attr("class", "line");
 
 // generate the axes and the line plot with json call:
-d3.json( "{{ url_for('serve_spectrum') }}", function(data) {
-	// parse the domains, and put into the scales
-	xScale.domain([ d3.min(data, function(d){ return d.x;}), d3.max(data, function(d){return d.x;}) ]);
-	yScale.domain([ d3.min(data, function(d){ return d.y;}), d3.max(data, function(d){return d.y;}) ]);
-	
-	// bind the data to our line plot, using the line generator above
-	svg.select("path.line").data( [data] );
-	
-	// finally, draw the image
-	draw();
-});
+function draw_spectrum( spec_id ) {
+		d3.json( "{{ url_for('serve_spectrum') }}?spec="+spec_id, function(data) {
+			// parse the domains, and put into the scales
+			xScale.domain([ d3.min(data, function(d){ return d.x;}), d3.max(data, function(d){return d.x;}) ]);
+			yScale.domain([ d3.min(data, function(d){ return d.y;}), d3.max(data, function(d){return d.y;}) ]);
+
+			// bind the data to our line plot, using the line generator above
+			svg.select("path.line").data( [data] );
+
+			// finally, draw the image
+			draw();
+		});
+};
 
 function draw() {
 	svg.select("g.x.axis").call(xAxis);
@@ -151,6 +105,5 @@ function draw() {
 	svg.select("path.line").attr("d", line);
 }
 </script>
-
 
 {% endblock %}

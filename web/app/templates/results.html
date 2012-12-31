@@ -67,58 +67,65 @@
 <script src="static/d3.v2.js"></script>
 <!-- THE LINE PLOT -->
 <script>
-// testing json calls
-d3.json( "{{ url_for('serve_data') }}",
-	function(data) {console.log(data);});
-
-var data = d3.range(40).map(function(i) {
-  return {x: i / 39, y: (Math.sin(i / 3) + 2) / 4};
-});
-
-
-var margin = {top: 10, right: 10, bottom: 20, left: 30},
-    width = 550 - margin.left - margin.right,
+// margins & size
+var margin = {top: 10, right: 10, bottom: 10, left: 70},
+    width = 600 - margin.left - margin.right,
     height = 300 - margin.top - margin.bottom;
 
-var x = d3.scale.linear()
-    .domain([0, 1])
+// scales
+var xScale = d3.scale.linear()
     .range([0, width]);
-
-var y = d3.scale.linear()
-    .domain([0, 1])
+var yScale = d3.scale.linear()
     .range([height, 0]);
 
+// axis generators
 var xAxis = d3.svg.axis()
-    .scale(x)
+    .scale(xScale)
     .orient("bottom");
-
 var yAxis = d3.svg.axis()
-    .scale(y)
+    .scale(yScale)
     .orient("left");
 
+// a line generator, called below
 var line = d3.svg.line()
-    .x(function(d) { return x(d.x); })
-    .y(function(d) { return y(d.y); });
+    .x(function(d) { return xScale(d.x); })
+    .y(function(d) { return yScale(d.y); });
 
+// the main image -- data added below in json call
 var svg = d3.select("#main_hero").append("svg")
-    .datum(data)
-    .attr("height", "48%")
+    .attr("height", "50%")
     .attr("width", "100%")
+	.attr("viewBox", "0 0 600 300")
   .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");	
 
+// insert the (empty) lines and axes into svg
 svg.append("g")
     .attr("class", "x axis")
-    .attr("transform", "translate(0," + height + ")")
-    .call(xAxis);
-
+    .attr("transform", "translate(0," + height + ")");
 svg.append("g")
-    .attr("class", "y axis")
-    .call(yAxis);
-
+    .attr("class", "y axis");
 svg.append("path")
-    .attr("class", "line")
-    .attr("d", line);
+    .attr("class", "line");
+
+// generate the axes and the line plot with json call:
+d3.json( "{{ url_for('serve_data') }}", function(data) {
+	// parse the domains, and put into the scales
+	xScale.domain([ d3.min(data, function(d){ return d.x;}), d3.max(data, function(d){return d.x;}) ]);
+	yScale.domain([ d3.min(data, function(d){ return d.y;}), d3.max(data, function(d){return d.y;}) ]);
+	
+	// bind the data to our line plot, using the line generator above
+	svg.select("path.line").data( [data] );
+	
+	// finally, draw the image
+	draw();
+});
+
+function draw() {
+	svg.select("g.x.axis").call(xAxis);
+	svg.select("g.y.axis").call(yAxis);
+	svg.select("path.line").attr("d", line);
+}
 </script>
 
 <script src="static/js/jquery.js"></script> <!-- this and below may be unnecessary -->

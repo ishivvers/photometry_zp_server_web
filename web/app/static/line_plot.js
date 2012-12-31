@@ -5,15 +5,21 @@ var data = d3.json( "{{ url_for('serve_data') }}",
 	function(i) {return {x: i.x, y: i.y}; });
 */
 
+// testing json calls
+d3.json( "{{ url_for('serve_data') }}",
+	function(data) {console.log(data);});
+
+
 var data = d3.range(40).map(function(i) {
   return {x: i / 39, y: (Math.sin(i / 3) + 2) / 4};
 });
 
-
-var margin = {top: 10, right: 10, bottom: 20, left: 40},
-    width = 600 - margin.left - margin.right,
+// margins and size
+var margin = {top: 10, right: 10, bottom: 20, left: 30},
+    width = 550 - margin.left - margin.right,
     height = 300 - margin.top - margin.bottom;
 
+// scales
 var x = d3.scale.linear()
     .domain([0, 1])
     .range([0, width]);
@@ -36,8 +42,8 @@ var line = d3.svg.line()
 
 var svg = d3.select("#main_hero").append("svg")
     .datum(data)
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+    .attr("height", "48%")
+    .attr("width", "100%")
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 

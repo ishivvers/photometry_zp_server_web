@@ -5,13 +5,25 @@
 
 {% block content %}
 
+<!-- <div class="container-fluid"> -->
 <div class="container-fluid">
   <div class="row-fluid">
     <div class="span3">
-      <div class="well sidebar-nav">
+      <div class="well sidebar-nav pre-scrollable">
         <ul class="nav nav-list">
-          <li class="nav-header">Sidebar</li>
+          <li class="nav-header">Sources (RA,DEC)</li>
           <li class="active"><a href="#">Link</a></li>
+		  <!-- use an onclick() js call -->
+          <li><a href="#" id="source1">Link</a></li>
+          <li><a href="#">Link</a></li>
+          <li><a href="#">Link</a></li>
+          <li><a href="#">Link</a></li>
+          <li><a href="#">Link</a></li>
+          <li><a href="#">Link</a></li>
+          <li><a href="#">Link</a></li>
+          <li><a href="#">Link</a></li>
+          <li><a href="#">Link</a></li>
+          <li><a href="#">Link</a></li>
           <li><a href="#">Link</a></li>
           <li><a href="#">Link</a></li>
           <li><a href="#">Link</a></li>
@@ -65,8 +77,18 @@
 
 <!-- Load all js -->
 <script src="static/d3.v2.js"></script>
+<!-- HANDLING SOURCE SELECTIONS -->
+<script type="text/javascript">
+ function form_send( form_id ){
+   f=document.getElementById( form_id );
+   if(f){
+     f.submit();
+     }
+   }
+ </script>
+
 <!-- THE LINE PLOT -->
-<script>
+<script type="text/jacascript">
 // margins & size
 var margin = {top: 10, right: 10, bottom: 10, left: 70},
     width = 600 - margin.left - margin.right,
@@ -81,10 +103,12 @@ var yScale = d3.scale.linear()
 // axis generators
 var xAxis = d3.svg.axis()
     .scale(xScale)
-    .orient("bottom");
+    .orient("bottom")
+	.ticks(5);
 var yAxis = d3.svg.axis()
     .scale(yScale)
-    .orient("left");
+    .orient("left")
+	.ticks(5);
 
 // a line generator, called below
 var line = d3.svg.line()
@@ -109,7 +133,7 @@ svg.append("path")
     .attr("class", "line");
 
 // generate the axes and the line plot with json call:
-d3.json( "{{ url_for('serve_data') }}", function(data) {
+d3.json( "{{ url_for('serve_spectrum') }}", function(data) {
 	// parse the domains, and put into the scales
 	xScale.domain([ d3.min(data, function(d){ return d.x;}), d3.max(data, function(d){return d.x;}) ]);
 	yScale.domain([ d3.min(data, function(d){ return d.y;}), d3.max(data, function(d){return d.y;}) ]);
@@ -128,18 +152,5 @@ function draw() {
 }
 </script>
 
-<script src="static/js/jquery.js"></script> <!-- this and below may be unnecessary -->
-<script src="static/js/bootstrap-transition.js"></script>
-<script src="static/js/bootstrap-alert.js"></script>
-<script src="static/js/bootstrap-modal.js"></script>
-<script src="static/js/bootstrap-dropdown.js"></script>
-<script src="static/js/bootstrap-scrollspy.js"></script>
-<script src="static/js/bootstrap-tab.js"></script>
-<script src="static/js/bootstrap-tooltip.js"></script>
-<script src="static/js/bootstrap-popover.js"></script>
-<script src="static/js/bootstrap-button.js"></script>
-<script src="static/js/bootstrap-collapse.js"></script>
-<script src="static/js/bootstrap-carousel.js"></script>
-<script src="static/js/bootstrap-typeahead.js"></script>
 
 {% endblock %}

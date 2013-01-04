@@ -15,6 +15,18 @@
   stroke-width: 1.5px;
 }
 
-.bars rect {
-  fill: steelblue;
+.circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.loading {
+    font: 15px sans-serif;
+    color: steelblue;
+}
+
+.labels {
+    font: 8px sans-serif;
+    color: steelblue;
 }

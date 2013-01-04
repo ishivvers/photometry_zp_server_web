@@ -4,21 +4,104 @@
 {% set page_title = 'Welcome to the Photometry Server.' %}
 
 {% block content %}
-<p>	This will produce photometry estimates of requested stars
-	in all bands, and will calculate an estimated zeropoint
-	when given instrumental mags.  Please upload a space-delimited file
-	(#-commented) with the following columns:</p>
-	<ul>
-		<li> RA </li>
-		<li> DEC </li>
-		<li> Instrumental Mag (optional)</li>
-	</ul>
-
-    <label>file</label>
-    <input type="file" value="">
-
-	{{ feedback }}
-
+<div class="container">
+  <div class="row-fluid">
+	<div class="span12">
+      <div class="hero-unit">
+	<p>	This can do three things:
+		1) produce photometric catalog,
+		in all bands, of stars in a defined field.
+		2) produce photometric catalog,
+		in all bands, of stars at given coordinates. (working on this one now)
+		3) calculate an estimated field zeropoint given star coordinates
+		and instrumental magnitudes.
+		Please upload a space-delimited file
+		(#-commented) with the following columns:</p>
+	
+		<ul>
+			<li> RA </li>
+			<li> DEC </li>
+			<li> Instrumental Mag (optional)</li>
+		</ul>
+	  </div><!--/hero-->
+	</div><!--/span-->
+	</div><!--/row-->
+	<div class="row-fluid">
+		<div class="span4">
+			<h3>1</h3>
+			<p>Enter an RA, DEC, in decimal degrees, and field size
+				in arcseconds. Note: maximum field size is 2&deg; (7200").</p>
+			<form class="form-inline" method="POST">
+			  <input type="text" name="RA" class="input-small" placeholder="RA (&deg;)">
+			  <input type="text" name="DEC" class="input-small" placeholder="DEC (&deg;)">
+			  <input type="text" name="FS" class="input-small" placeholder="Field Size (&quot;)">
+			  <input type="hidden" name="mode" value="1">
+			  <input type="submit" class="btn btn-primary btn-small" value="Submit"/>
+			</form>
+		</div><!--/span-->
+		<div class="span4">
+			<h3>2</h3>
+			<p>Upload a numpy.loadtxt-parsable file containing RA and DEC (in decimal degrees)
+				as the first two columns.  Please note this is designed for stars grouped together
+				in a field -- if you'd like estimates for widely-separated stars, use mode 1.</p>
+			<form action="upload" method="POST" enctype="multipart/form-data">
+		    <input type="file" id="upload_file" name="source_file"/>
+			<input type="hidden" name="mode" value="2">
+			<input type="submit" class="btn btn-primary btn-small" value="Submit"/>
+			</form>
+		</div><!--/span-->
+		<div class="span4">
+			<h3>3</h3>
+			<p>Upload a numpy.loadtxt-parsable file containing RA and DEC (in decimal degrees)
+				as the first two columns, and instrumental mags as the third.  Please note this
+				is designed for stars grouped together in a field.</p>
+			<form action="upload" method="POST" enctype="multipart/form-data">
+		    <input type="file" id="upload_file" name="source_file"/>
+			<input type="hidden" name="mode" value="3">
+			<input type="submit" class="btn btn-primary btn-small" value="Submit"/>
+			</form>
+		</div><!--/span-->
+	</div> <!--/row-->
+	<div class="row-fluid">
+    <div class="span6">
+	  {% if mode %}
+		<hr>
+		  <p>Verify that data below are properly loaded and click Continue, <br>
+			or try again.</p>
+		  {% if mode>1 %}
+		  <table class="table table-condensed">
+		    <tr><td><b>RA</b></td>
+			<td><b>DEC</b></td>
+			{% if mode==3 %}
+			  <td><b>Inst. Mag</b></td>
+			{% endif %}
+			</tr>
+			{% for row in data %}
+			  <tr><td>{{ row[0] }}</td>
+			  <td>{{ row[1] }}</td>
+			  {% if mode==3 %}
+			    <td>{{ row[2] }}</td>
+			  {% endif %}
+			  </tr>
+			{% endfor %}
+	      </table>
+	      {% endif %}
+	      {% if mode==1 %}
+			<p>
+				<b>RA:</b> {{ data[0] }}&deg; <br>
+				<b>DEC:</b> {{ data[1] }}&deg; <br>
+				<b>Field Size:</b> {{ data[2] }}&quot; <br>
+			</p>
+	      {% endif %}
+		  <a href="{{ url_for('show_results') }}" class="btn btn-primary">Continue</a>
+	  {% endif %}
+	
+      {% if feedback %}
+	    <h3> {{ feedback }} </h3>
+	  {% endif %}
+	</div><!--/span-->
+  </div><!--/row-->
+</div><!--/container-->
 <!--
 <p> and select a passband from the drop-down menu.</p>
 

@@ -5,18 +5,18 @@
 {% block content %}
 <div class="container-fluid">
   <div class="row-fluid">
-    <div class="span3">
+    <div class="span4">
       <div class="well sidebar-nav pre-scrollable">
         <ul class="nav nav-list">
           <li class="nav-header">Sources (RA,DEC)</li>
 		  <!-- add class="active" to add highlighting -->
 		  {% for spec_id in spec_ids %}
-            <li><a href="#" onclick="draw_spectrum({{ spec_id }})">Source {{ loop.index }}</a></li>
+            <li><a href="#" onclick="draw_spectrum({{ spec_id }}, {{ loop.index-1 }})"> ({{ coords[loop.index-1][0] }}, {{ coords[loop.index-1][1] }}) </a></li>
 		  {% endfor %}
         </ul>
       </div><!--/.well -->
     </div><!--/span-->
-    <div class="span9">
+    <div class="span8">
       <div class="hero-unit" id="main_hero">
 		<!-- draw our line plot -->
       </div>
@@ -41,13 +41,18 @@
 
 <!-- THE LINE PLOT -->
 <script type="text/javascript">
+
+// the bands we use:
+var band_names = ['u','g','r','i','z','y','B','R','J','H','K']
+    band_wl    = [3551., 4686., 6165., 7481., 8931., 10091., 4400., 6500., 12350., 16620., 21590.];
+
 // margins & size
-var margin = {top: 10, right: 10, bottom: 10, left: 70},
+var margin = {top: 10, right: 10, bottom: 20, left: 65},
     width = 600 - margin.left - margin.right,
     height = 300 - margin.top - margin.bottom;
 
 // scales
-var xScale = d3.scale.linear()
+var xScale = d3.scale.log()
     .range([0, width]);
 var yScale = d3.scale.linear()
     .range([height, 0]);
@@ -56,12 +61,14 @@ var yScale = d3.scale.linear()
 var xAxis = d3.svg.axis()
     .scale(xScale)
     .orient("bottom")
-	.ticks(5);
+	.tickValues( band_wl )
+	.tickFormat( function(d,i) { console.log(i); return band_names[i];} );
 var yAxis = d3.svg.axis()
     .scale(yScale)
     .orient("left")
-	.ticks(5);
-
+	.ticks(5)
+	.tickFormat(d3.format(".1e"));
+	
 // a line generator, called below
 var line = d3.svg.line()
     .x(function(d) { return xScale(d.x); })
@@ -84,25 +91,58 @@ svg.append("g")
 svg.append("path")
     .attr("class", "line");
 
-// generate the axes and the line plot with json call:
-function draw_spectrum( spec_id ) {
-		d3.json( "{{ url_for('serve_spectrum') }}?spec="+spec_id, function(data) {
-			// parse the domains, and put into the scales
-			xScale.domain([ d3.min(data, function(d){ return d.x;}), d3.max(data, function(d){return d.x;}) ]);
-			yScale.domain([ d3.min(data, function(d){ return d.y;}), d3.max(data, function(d){return d.y;}) ]);
+// some feedback text so user knows what to do next
+svg.append("text")
+    .attr("class", "loading")
+    .text("Choose a source to inspect...")
+    .attr("x", function () { return width/2-125; })
+    .attr("y", function () { return height/2; });
 
-			// bind the data to our line plot, using the line generator above
-			svg.select("path.line").data( [data] );
+function draw_spectrum( spec_id, sed_index ) {
+	// remove the loading text:
+	svg.selectAll(".loading").remove();
+	
+	// if there are already circles around, remove them
+	svg.selectAll(".circle").remove();
+	svg.selectAll(".labels").remove();
+	
+	// put in the line plot with a json call to serve_spectrum:
+	d3.json( "{{ url_for('serve_spectrum') }}?spec="+String(spec_id)+"&index="+String(sed_index), function(data) {
+		// parse the domains, and put into the scales
+		xScale.domain([ d3.min(data, function(d){return d.x;}), d3.max(data, function(d){return d.x;}) ]);
+		yScale.domain([ d3.min(data, function(d){ return d.y;}), d3.max(data, function(d){return d.y;}) ]);
 
-			// finally, draw the image
-			draw();
-		});
+		// bind the data to our line plot, using the line generator above
+		svg.select("path.line").data( [data] );
+
+		// finally, draw the image
+		draw();
+	});
+	
+	// now insert the scatterplot with a json call to serve_mags
+	d3.json( "{{ url_for('serve_mags') }}?index="+String(sed_index), function(data) {
+		svg.selectAll("circle")
+			.data(data).enter().append("circle")
+			.attr("class", "circle")
+			.attr("cx", function(d) { return xScale(d.x);})
+			.attr("cy", function(d) { return yScale(d.y);})
+			.transition()
+			  .delay(400)
+	          .duration(400)
+			  .attr("r", 8);
+			
+		// redraw the image
+		draw();
+	})
 };
 
 function draw() {
 	svg.select("g.x.axis").call(xAxis);
 	svg.select("g.y.axis").call(yAxis);
-	svg.select("path.line").attr("d", line);
+	svg.select("path.line")
+		.transition()
+        .duration(400)
+		.attr("d", line);
 }
 </script>
 

@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 
-{% set page_title = 'Results.' %}
-
 {% block content %}
 <div class="container-fluid">
   <div class="row-fluid">
@@ -21,15 +19,46 @@
 		<!-- draw our line plot -->
       </div>
       <div class="row-fluid">
-        <div class="span4">
-          <h2>Zeropoint Estimates</h2>
-          <p>Here, I'll include the calculated ZP estimate, if given instrumental mags and a band
-	         on the previous page.  Also include info for each band of the given source.</p>
+        <div class="span4" id="feedback1">
+          <h2>Magnitudes</h2>
+			<table class="table table-condensed">
+				<tr><td><b>Band</b></td>
+					<td><b>Mag</b></td>
+					<td><b>&sigma;</b></td>
+					<td><b>Modeled?</b></td></tr>
+				<tr id='tr_u'><td><b>u</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+				<tr id='tr_g'><td><b>g</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+				<tr id='tr_r'><td><b>r</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+				<tr id='tr_i'><td><b>i</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+				<tr id='tr_z'><td><b>z</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+				<tr id='tr_y'><td><b>y</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+				<tr id='tr_B'><td><b>B</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+				<tr id='tr_R'><td><b>R</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+				<tr id='tr_J'><td><b>J</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+				<tr id='tr_H'><td><b>H</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+				<tr id='tr_K'><td><b>K</b></td>
+					<td>-</td><td>-</td><td>-</td></tr>
+			</table>
         </div><!--/span-->
         <div class="span8">
-          <h2>Histogram</h2>
-		  <p>Put a histogram here (if given instrumental mags).  Otherwise, include and image
-			 of the selected source.</p>
+          <h2>Catalog</h2>
+			<p>
+				Click below to download a full computer-readable (tab-separated) ASCII catalog,
+				including all magnitudes and errors, for these sources.
+			</p>
+			<form method="get" action="{{ url_for('serve_full_catalog') }}">
+			<input type="submit" class="btn btn-primary btn-small" value="Download"/>
+			</form>
         </div><!--/span-->
       </div><!--/row-->
     </div><!--/span-->
@@ -39,12 +68,8 @@
 <!-- Load all js -->
 <script src="static/d3.v2.js"></script>
 
-<!-- THE LINE PLOT -->
+<!-- THE PLOTS -->
 <script type="text/javascript">
-
-// the bands we use:
-var band_names = ['u','g','r','i','z','y','B','R','J','H','K']
-    band_wl    = [3551., 4686., 6165., 7481., 8931., 10091., 4400., 6500., 12350., 16620., 21590.];
 
 // margins & size
 var margin = {top: 10, right: 10, bottom: 20, left: 65},
@@ -61,8 +86,8 @@ var yScale = d3.scale.linear()
 var xAxis = d3.svg.axis()
     .scale(xScale)
     .orient("bottom")
-	.tickValues( band_wl )
-	.tickFormat( function(d,i) { console.log(i); return band_names[i];} );
+	.tickValues( [3000,4000,5000,6000,8000,10000,15000,20000] )
+	.tickFormat(d3.format("d"));
 var yAxis = d3.svg.axis()
     .scale(yScale)
     .orient("left")
@@ -90,6 +115,25 @@ svg.append("g")
     .attr("class", "y axis");
 svg.append("path")
     .attr("class", "line");
+// axis labels, invisible until plot is drawn
+svg.append("text")
+	.attr("class", "x label")
+	.attr("text-anchor", "end")
+	.attr("x", width-5)
+	.attr("y", height-8)
+	.text("wavelength (A)")
+	.attr("opacity", 0.0);
+svg.append("text")
+	.attr("class", "y label")
+	.attr("text-anchor", "end")
+	.attr("y", 12)
+	.attr("transform", "rotate(-90)")
+	.text("Flux (erg/s/cm^2/A)")
+	.attr("opacity", 0.0);
+
+// create a variable to contain the displayed SED (used below)
+var SED = svg.append("svg:g")
+             .attr("id", "SED");
 
 // some feedback text so user knows what to do next
 svg.append("text")
@@ -104,7 +148,6 @@ function draw_spectrum( spec_id, sed_index ) {
 	
 	// if there are already circles around, remove them
 	svg.selectAll(".circle").remove();
-	svg.selectAll(".labels").remove();
 	
 	// put in the line plot with a json call to serve_spectrum:
 	d3.json( "{{ url_for('serve_spectrum') }}?spec="+String(spec_id)+"&index="+String(sed_index), function(data) {
@@ -120,7 +163,7 @@ function draw_spectrum( spec_id, sed_index ) {
 	});
 	
 	// now insert the scatterplot with a json call to serve_mags
-	d3.json( "{{ url_for('serve_mags') }}?index="+String(sed_index), function(data) {
+	d3.json( "{{ url_for('serve_sed_flams') }}?index="+String(sed_index), function(data) {
 		svg.selectAll("circle")
 			.data(data).enter().append("circle")
 			.attr("class", "circle")
@@ -134,16 +177,38 @@ function draw_spectrum( spec_id, sed_index ) {
 		// redraw the image
 		draw();
 	})
+	
+	// now update the text below
+	update_text(sed_index);
 };
 
 function draw() {
 	svg.select("g.x.axis").call(xAxis);
 	svg.select("g.y.axis").call(yAxis);
+	svg.selectAll(".label").attr("opacity",1.0);
 	svg.select("path.line")
 		.transition()
         .duration(400)
 		.attr("d", line);
 }
+
+// function to change the body text, displaying feedback for selected source
+function update_text(sed_index) {
+	var xmlhttp=new XMLHttpRequest();
+	xmlhttp.onreadystatechange=function() {
+	  if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+			eval("var reply="+xmlhttp.responseText);
+			for (var i=0; i<reply.length; i++) {
+				var cells = document.getElementById("tr_"+reply[i].name).childNodes;
+				cells[2].childNodes[0].replaceData( 0, 10, reply[i].y.toFixed(2));
+				cells[3].childNodes[0].replaceData( 0, 10, reply[i].err.toFixed(3));
+				cells[4].childNodes[0].replaceData( 0, 10, reply[i].modeled);
+	        };
+	  };
+	};
+	xmlhttp.open("GET","{{ url_for('serve_sed_mags') }}?index="+String(sed_index),true);
+	xmlhttp.send();
+};
 </script>
 
 {% endblock %}

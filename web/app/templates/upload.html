@@ -1,7 +1,4 @@
-
 {% extends "base.html" %}
-
-{% set page_title = 'Welcome to the Photometry Server.' %}
 
 {% block content %}
 <div class="container">
@@ -67,7 +64,9 @@
 	  {% if mode %}
 		<hr>
 		  <p>Verify that data below are properly loaded and click Continue, <br>
-			or try again.</p>
+			or try again.  ADD A WAITING SCREEN HERE -- when you click Continue, 
+			user will see a grayed-out screen with a loading image, and text that
+			says 'please do not close this window!'</p>
 		  {% if mode>1 %}
 		  <table class="table table-condensed">
 		    <tr><td><b>RA</b></td>

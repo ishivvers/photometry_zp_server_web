@@ -57,6 +57,19 @@
 			<form action="upload" method="POST" enctype="multipart/form-data">
 		    <input type="file" id="upload_file" name="source_file"/>
 			<input type="hidden" name="mode" value="3">
+			<select class="input-mini" name="band">
+			  <option value="u">u</option>
+			  <option value="g">g</option>
+			  <option value="r">r</option>
+			  <option value="i">i</option>
+			  <option value="z">z</option>
+			  <option value="y">y</option>
+		  	  <option value="B">B</option>
+			  <option value="R">R</option>
+			  <option value="J">J</option>
+			  <option value="H">H</option>
+			  <option value="K">K</option>
+			</select>
 			<input type="submit" class="btn btn-primary btn-small" value="Submit"/>
 			</form>
 		</div><!--/span-->
@@ -103,27 +116,6 @@
 	</div><!--/span-->
   </div><!--/row-->
 </div><!--/container-->
-<!--
-<p> and select a passband from the drop-down menu.</p>
 
-<h2>Passband:</h2>
-<form>
-<select id="bandList" onchange="favBrowser()">
-  <option></option>
-  <option>u</option>
-  <option>g</option>  
-  <option>r</option>
-  <option>i</option>
-  <option>z</option>
-  <option>y</option>
-  <option>B</option>
-  <option>R</option>
-  <option>J</option>
-  <option>H</option>
-  <option>K</option>
-</select>
-</form>
-<p>Chosen: <input type="text" id="choice" size="20"></p>
--->
 
 {% endblock %}

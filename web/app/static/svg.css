@@ -17,7 +17,6 @@
 
 .circle {
   fill: #fff;
-  stroke: steelblue;
   stroke-width: 1.5px;
 }
 
@@ -29,4 +28,13 @@
 .labels {
     font: 8px sans-serif;
     color: steelblue;
+}
+
+.bar rect {
+  fill: steelblue;
+  shape-rendering: crispEdges;
+}
+
+.bar text {
+  fill: #fff;
 }

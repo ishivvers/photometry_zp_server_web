@@ -9,21 +9,11 @@ from my_code import get_SEDs as gs #my library written to predict SEDs
 
 '''
 TO DO:
- - move globals into a persistant database that carries around the data for each request.
- - create a key with session (tied to database table), so that apache can thread this.
  - if using SDSS+2MASS, do not return usnob mags
  - include link to simbad for each source
 '''
 
 ########################################################################
-# global variables -- should port these into cookie/session keys later
-
-# ID for this session -- all saved files et cetera will use this identifier.
-#  Include a cronjob to delete obsolete/old files -- maybe delete all more than a day old?
-CURRENT_ID = str(time()).split('.')[0]
-CURRENT_MODE = None
-DATA = None #a global container for the data passed along to results page
-
 # The below can stay as global variables, since they don't change across threads
 #  Central wavelength and zeropoint for all filters (zp in erg/s/cm^2/A )
 FILTER_PARAMS =  {'u': (3551., 8.5864e-9), 'g': (4686., 4.8918e-9),
@@ -43,7 +33,9 @@ MODELS_DICT = {}
 for model in MODELS[1:]:
     MODELS_DICT[model[0]] = model[1:]
 del(MODELS) #just to free memory
-    
+
+# initialize the database
+DB = pm.MongoClient().PZserver
 
 #######################################################################
 @app.route('/upload', methods=['GET', 'POST'])
@@ -60,26 +52,42 @@ def show_upload():
         # see which mode we're in
         mode = int(request.form['mode'])
         if mode == 1:
-            globals()['CURRENT_MODE'] = 1
-            data = map(float, [request.form['RA'], request.form['DEC'], request.form['FS']])
-        else:
-            globals()['CURRENT_MODE'] = mode
+            # test whether ra,dec, and fs pass muster:
+            data = ra, dec, fs = map(float, [request.form['RA'], request.form['DEC'], request.form['FS']])
+            if not (0. < ra < 360.) and (-90. < dec < -90) and (0. < fs < 7200.):
+                return render_template( "upload.html", feedback="Make sure you've entered valid parameters!")
+            # if all's good, create the collection and populate it
+            coll = create_collection()
+            coll.insert( {"entry":"mode", "mode":mode} )
+            coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":fs} )
+        elif mode == 2:
             source_file = request.files["source_file"]
             if source_file and allowed_file(source_file.filename):
                 # try to parse with numpy
                 try:
-                    source_file.save( app.config['UPLOAD_FOLDER'] + '{}_source.txt'.format(CURRENT_ID) )
-                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + '{}_source.txt'.format(CURRENT_ID) )
+                    source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
+                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
                 except:
                     return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
                                                     "is a .txt file readable with numpy.loadtxt()!")
             else:
                 return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
                                                 "is a .txt file readable with numpy.loadtxt()!")
-        globals()['DATA'] = data
-        return render_template( "upload.html", mode=CURRENT_MODE, data=data[:5] )
+            # if all's good, create the collection and populate it
+            coll = create_collection()
+            coll.insert( {"entry":"mode", "mode":mode} )
+            for row in data:
+                coll["requested_coords"].insert( {"ra":row[0], "dec":row[1] })
+        return render_template( "upload.html", mode=mode, data=data[:5] )
     
 ## show_upload() helper functions
+def create_collection():
+    # create a new collection in the database, using the unix time and a random integer
+    #  to ensure a datable (yet unique) collection.  Remove these with cronjob!
+    sid = str(time()).split('.')[0]+'_'+str(np.random.randint(9999))
+    session['sid'] = sid
+    return DB[sid]
+    
 ALLOWED_EXTENSIONS = set(['txt','dat'])
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
@@ -91,31 +99,44 @@ def show_results():
     '''
     The main results page, uses results.html (and base.html).
     '''
+    coll = DB[ session['sid'] ]
     # case out the three different modes
-    if CURRENT_MODE == 1:
-        ra,dec,fs = DATA
+    mode = coll.find_one( {"entry":"mode"} )['mode']
+    if mode == 1:
+        search_field = coll.find_one( {"entry":"search_field"})
+        ra = search_field['ra']
+        dec = search_field['dec']
+        fs = search_field['fs']
         coords, seds, models, modes = gs.catalog( (ra,dec), (fs, fs), return_models=True ) #square box of size fs
         model_indices, errors = zip(*models)
-        globals()['DATA'] = (seds, errors, modes, coords)
+        for i in range(len(seds)):
+            coll['data'].insert( {"index":i, "sed":seds[i].tolist(), "errors":errors[i].tolist(),\
+                                    "mode":modes[i], "coords":coords[i].tolist()} )
         return render_template( "results.html", spec_ids=map(int, model_indices), coords=coords )
         
-    elif CURRENT_MODE == 2:
-        requested_coords = DATA[:,:2]
+    elif mode == 2:
+        requested_coords = []
+        curs = coll['requested_coords'].find()
+        for i in range(curs.count()):
+            obj = curs.next()
+            requested_coords.append( [obj['ra'], obj['dec']] )
+        requested_coords = np.array(requested_coords) #put into numpy array for sake of functions below
+        
         center, size = gs.find_field( requested_coords )
         coords, seds, models, modes = gs.catalog( center, size, object_coords=requested_coords, return_models=True )
         model_indices, errors = zip(*models)
         # match requested coords to returned sources
         matches = gs.identify_matches( requested_coords, coords)
-        oseds, oerrors, omodes, ocoords, omodel_indices = [],[],[],[],[]
-        for i,match in enumerate(matches):
+        out_coords, out_model_indices = [],[]
+        i = 0
+        for match in matches:
             if match != None:
-                oseds.append( seds[match] )
-                oerrors.append( errors[match] )
-                omodes.append( modes[match] )
-                ocoords.append( coords[match] )
-                omodel_indices.append( model_indices[match] )
-        globals()['DATA'] = (oseds, oerrors, omodes, ocoords)
-        return render_template( "results.html", spec_ids=map(int, omodel_indices), coords=ocoords )
+                coll['data'].insert( {"index":i, "sed":seds[match].tolist(), "errors":errors[match].tolist(),
+                                        "mode":modes[match], "coords":coords[match].tolist()} )
+                out_model_indices.append( model_indices[match] )
+                out_coords.append( coords[match] )
+                i +=1
+        return render_template( "results.html", spec_ids=map(int, out_model_indices), coords=out_coords )
 
 
 
@@ -131,11 +152,9 @@ def show_contact():
 @app.route('/servespectrum', methods=['GET'])
 def serve_spectrum():
     '''
-    Loads spectrum loaded from numpy file (given a spectrum id with url?spec=value)
-    and returns it in JSON format, as a set of objects with an x (Angstroms) and y (Flam).
-    
-    Need to modify such that this also accepts a multiplier/offset to equilibrate
-     the spectrum and the mags.
+    Loads spectrum loaded from numpy file and renormalizes it
+    (given a spectrum id with url?spec=value&index=value), and then
+    returns it in JSON format, as a set of objects with an x (Angstroms) and y (Flam).
     '''
     spec = int(request.args.get('spec',''))
     sed_index = int(request.args.get('index',''))
@@ -146,7 +165,9 @@ def serve_spectrum():
     
     # now match the model spectrum to the SED, using the Y-band
     #  to match (since Y will always be modeled)
-    sed_mags = DATA[0][sed_index]
+    coll = DB[ session['sid'] ]
+    curs = coll['data'].find_one( {"index":sed_index} )
+    sed_mags = curs["sed"]
     sed_flam = mag2flam( sed_mags, ALL_FILTERS )
     # pull out the already-calculated model mag for yband
     y_model_flam = mag2flam( [MODELS_DICT[spec][5]], ['y'] ) #need to be array-like
@@ -163,12 +184,12 @@ def serve_spectrum():
 def serve_sed_flams():
     '''
     Loads magnitudes (obs and modeled) from database created by upload, returns FLAM.
-    Needs database key (given as url?key=value).
-    
-    Include, in database, both mags and values in FLAM (erg/s/W^2/A) for plotting.
+    Needs database index (given as url?index=value).
     '''
     sed_index = int(request.args.get('index',''))
-    sed_mags = DATA[0][sed_index]
+    coll = DB[ session['sid'] ]
+    curs = coll['data'].find_one( {"index":sed_index} )
+    sed_mags = curs["sed"]
     sed_flam = mag2flam( sed_mags, ALL_FILTERS )
     
     # push wavelengths (A) and flam into json-able format
@@ -181,13 +202,14 @@ def serve_sed_mags():
     '''
     Loads magnitudes (obs and modeled) from database created by upload, returns FLAM.
     Needs database key (given as url?key=value).
-    
-    Include, in database, both mags and values in FLAM (erg/s/W^2/A) for plotting.
     '''
     sed_index = int(request.args.get('index',''))    
-    sed_mags = DATA[0][sed_index]
-    sed_errs = DATA[1][sed_index]
-    mode = DATA[2][sed_index]
+    coll = DB[ session['sid'] ]
+    curs = coll['data'].find_one( {"index":sed_index} )
+    sed_mags = curs["sed"]
+    sed_errs = curs["errors"]
+    mode = curs["mode"]
+    
     if mode == 1:
         #USNOB+2MASS
         modeled = ['y']*6 + ['n']*5
@@ -205,7 +227,7 @@ def serve_full_catalog():
     '''
     Returns formatted & human-readable ASCII catalog of all sources.
     '''
-    mags, errs, mods, coords = DATA
+    #mags, errs, mods, coords = DATA
     catalog_txt = \
     "# Catalog produced by the Photometric Estimate Server\n"+\
     "# <website>\n" +\
@@ -213,14 +235,16 @@ def serve_full_catalog():
     "#\n#  Mode is the set of observations used to fit the model\n" +\
     "#   0=SDSS+2MASS, 1=USNOB+2MASS\n"+\
     "# " + "\t".join(["RA","DEC"] + list(ALL_FILTERS) + [val+"_err" for val in ALL_FILTERS]) + "\tMode\n"
-    for i, sed in enumerate(mags):
-        catalog_txt += "\t".join(map(lambda x: "%.6f"%x, coords[i]))+"\t"
-        catalog_txt += "\t".join(map(lambda x: "%.3f"%x, sed))+"\t"
-        catalog_txt += "\t".join(map(lambda x: "%.4f"%x, errs[i]))+"\t"
-        if mods[i] == ['y']*6 + ['n']*5:
-            catalog_txt += "1\n"
-        else:
-            catalog_txt += "1\n"
+    
+    coll = DB[ session['sid'] ]
+    curs = coll['data'].find()
+    for i in range(curs.count()):
+        obj = curs.next()
+        catalog_txt += "\t".join(map(lambda x: "%.6f"%x, obj["coords"]))+"\t"
+        catalog_txt += "\t".join(map(lambda x: "%.3f"%x, obj["sed"]))+"\t"
+        catalog_txt += "\t".join(map(lambda x: "%.4f"%x, obj["errors"]))+"\t"
+        catalog_txt += str(obj["mode"])+"\n"
+        
     response = Response(catalog_txt, mimetype='text/plain')
     response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
     return response

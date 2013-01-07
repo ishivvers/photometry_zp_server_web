@@ -82,7 +82,7 @@ h_svg.append("g")
     .attr("class", "x axis")
     .attr("transform", "translate(0," + h_height + ")");
 
-
+// get the data and put it up
 d3.json( "{{ url_for('serve_zeropoints') }}", function(objects) {
 	// make the histogram function
 	var values = [];
@@ -108,12 +108,12 @@ d3.json( "{{ url_for('serve_zeropoints') }}", function(objects) {
 	    .attr("width", h_xScale(data[1].x)-h_xScale(data[0].x) -1)
 	    .attr("height", function(d) { return h_height - h_yScale(d.y); });
 
+	// put in labels for counts
 	bar.append("text")
 	    .attr("dy", ".75em")
 	    .attr("y", 6)
 	    .attr("x", (h_xScale(data[1].x)-h_xScale(data[0].x)) /2)
 	    .attr("text-anchor", "middle")
 	    .text(function(d) { return formatCount(d.y); });
-	
 });
 {% endblock %}

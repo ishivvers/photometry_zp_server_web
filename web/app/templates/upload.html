@@ -7,28 +7,28 @@
   <div class="row-fluid">
 	<div class="span12">
       <div class="hero-unit">
-	<p>	This can do three things:
-		1) produce photometric catalog,
-		in all bands, of stars in a defined field.
-		2) produce photometric catalog,
-		in all bands, of stars at given coordinates. (working on this one now)
-		3) calculate an estimated field zeropoint given star coordinates
-		and instrumental magnitudes.
-		Please upload a space-delimited file
-		(#-commented) with the following columns:</p>
-	
-		<ul>
-			<li> RA </li>
-			<li> DEC </li>
-			<li> Instrumental Mag (optional)</li>
-		</ul>
-	  </div><!--/hero-->
-	</div><!--/span-->
+	<p>	Welcome to the All-Sky Photometric Estimates Generator! <br>
+		This generator uses a set of catalogs, together covering the entire sky
+		(2-MASS, USNOB1, SDSS), along with synthetic photometry of standard spectra
+		(the Pickles library) to produce estimated photometry in missing bands, returning
+		observations or estimates for u, g, r, i, z, y, B, R, J, H, &amp; K.<br>
+		There are three modes:
+		<ol>
+			<li>Produce a catalog of a specific field (or source) in the sky.</li>
+			<li>Produce a catalog of a set of stars (localized on the sky).</li>
+			<li>Estimate the photometric zeropoint of a set of observations in any band.</li>
+		</ol>
+		Check out the Info page for more information, examples, and a discussion of errors,
+		and please contact me with any questions! <br>
+		-Isaac Shivvers
+		</p>
+	    </div><!--/hero-->
+  	  </div><!--/span-->
 	</div><!--/row-->
 	<div class="row-fluid">
 		<div class="span4">
 			<h3>1</h3>
-			<p>Enter an RA, DEC, in decimal degrees, and field size
+			<p>Enter an RA and DEC, in decimal degrees, and field size
 				in arcseconds. Note: maximum field size is 2&deg; (7200").</p>
 			<form class="form-inline" method="POST">
 			  <input type="text" name="RA" class="input-small" placeholder="RA (&deg;)">
@@ -40,9 +40,9 @@
 		</div><!--/span-->
 		<div class="span4">
 			<h3>2</h3>
-			<p>Upload a numpy.loadtxt-parsable file containing RA and DEC (in decimal degrees)
-				as the first two columns.  Please note this is designed for stars grouped together
-				in a field -- if you'd like estimates for widely-separated stars, use mode 1.</p>
+			<p>Upload a space-separated or tab-separated file containing RA and DEC (in decimal degrees)
+				as the first two columns.  Note this is designed for stars grouped together in a
+				field and is capped at 1000 sources.</p>
 			<form action="upload" method="POST" enctype="multipart/form-data">
 		    <input type="file" id="upload_file" name="source_file"/>
 			<input type="hidden" name="mode" value="2">
@@ -51,9 +51,10 @@
 		</div><!--/span-->
 		<div class="span4">
 			<h3>3</h3>
-			<p>Upload a numpy.loadtxt-parsable file containing RA and DEC (in decimal degrees)
-				as the first two columns, and instrumental mags as the third.  Please note this
-				is designed for stars grouped together in a field.</p>
+			<p>Upload a space-separated or tab-separated file containing RA and DEC (in decimal degrees)
+				as the first two columns, and instrumental magnitudes as the third, and	select the
+				observed passband from the drop-down menu.
+				Note this is designed for stars grouped together in a field and is capped at 1000 sources.</p>
 			<form action="upload" method="POST" enctype="multipart/form-data">
 		    <input type="file" id="upload_file" name="source_file"/>
 			<input type="hidden" name="mode" value="3">
@@ -75,13 +76,12 @@
 		</div><!--/span-->
 	</div> <!--/row-->
 	<div class="row-fluid">
-    <div class="span6">
+      <div class="span6">
 	  {% if mode %}
 		<hr>
-		  <p>Verify that data below are properly loaded and click Continue, <br>
-			or try again.  ADD A WAITING SCREEN HERE -- when you click Continue, 
-			user will see a grayed-out screen with a loading image, and text that
-			says 'please do not close this window!'</p>
+		  <p>Verify that data below are properly loaded and click Continue.<br>
+			PLEASE DO NOT CLOSE THIS WINDOW - depending on the size of your request, 
+			the response may take up to a couple minutes!</p>
 		  {% if mode>1 %}
 		  <table class="table table-condensed">
 		    <tr><td><b>RA</b></td>
@@ -113,9 +113,8 @@
       {% if feedback %}
 	    <h3> {{ feedback }} </h3>
 	  {% endif %}
-	</div><!--/span-->
+	  </div><!--/span-->
   </div><!--/row-->
 </div><!--/container-->
-
 
 {% endblock %}

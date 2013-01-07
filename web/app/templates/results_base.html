@@ -21,8 +21,8 @@
     </div><!--/span-->
     <div class="span8">
       <div class="hero-unit" id="main_hero">
-		<!-- draw our line plot -->
-      </div>
+		<!-- draw the spectrum plot -->
+      </div><!--/hero -->
 
 	{% block content2 %}{% endblock %}
 
@@ -32,7 +32,6 @@
 
 
 
-<!-- Load all js -->
 <script src="static/d3.v2.js"></script>
 
 <!-- THE PLOTS -->
@@ -124,12 +123,21 @@ function draw_spectrum( spec_id, sed_index ) {
 
 		// bind the data to our line plot, using the line generator above
 		svg.select("path.line").data( [data] );
-		// finally, draw the image
-		draw();
 	});
 	
 	// now insert the scatterplot with a json call to serve_mags
 	d3.json( "{{ url_for('serve_sed_flams') }}?index="+String(sed_index), function(data) {
+		/* I'd like to make sure that no observed mags are off the plot (i.e. for one bad point),
+		    but this is not working and I do not understand why. Ignoring problem for now.
+	    // check whether we need to expand the plot size
+		if (d3.max(data, function(d){return d.y;}) > yScale.domain()[1]) {
+			yScale.domain()[1] = d3.max(data, function(d){return d.y;});
+		}
+		if (d3.min(data, function(d){return d.y;}) < yScale.domain()[0]) {
+			yScale.domain()[0] = d3.min(data, function(d){return d.y;});
+		}
+		*/
+		
 		svg.selectAll("circle")
 			.data(data).enter().append("circle")
 			.attr("class", "circle")
@@ -149,11 +157,10 @@ function draw_spectrum( spec_id, sed_index ) {
 				.attr("class", "loading")
 				.attr("x", xScale(data[i].x)-4)
 				.attr("y", yScale(data[i].y)+5)
-				.text(data[i].name)//
-				//.delay(400);
+				.text(data[i].name);
 		};
 			
-		// redraw the image
+		// draw the image
 		draw();
 	});
 	

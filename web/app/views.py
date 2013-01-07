@@ -55,7 +55,7 @@ def show_upload():
             # produce catalog for single field
             #  first test whether ra,dec, and fs pass muster:
             data = ra, dec, fs = map(float, [request.form['RA'], request.form['DEC'], request.form['FS']])
-            if not (0. < ra < 360.) and (-90. < dec < -90) and (0. < fs < 7200.):
+            if not (0. < ra < 360.) or not (-90. < dec < 90.) or not (0. < fs < 7200.):
                 return render_template( "upload.html", feedback="Make sure you've entered valid parameters!")
             # if all's good, create the collection and populate it
             coll = create_collection()
@@ -68,13 +68,13 @@ def show_upload():
                 # try to parse with numpy
                 try:
                     source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
-                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
+                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000] #only accept first 1000 sources
                 except:
                     return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                    "is a .txt file readable with numpy.loadtxt()!")
+                                                    "is a properly-formatted .txt file.")
             else:
                 return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                "is a .txt file readable with numpy.loadtxt()!")
+                                                "is a properly-formatted .txt file.")
             # if all's good, create the collection and populate it
             coll = create_collection()
             coll.insert( {"entry":"mode", "mode":mode} )
@@ -87,13 +87,13 @@ def show_upload():
                 # try to parse with numpy
                 try:
                     source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
-                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
+                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000]  #only accept first 1000 sources
                 except:
                     return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                    "is a .txt file readable with numpy.loadtxt()!")
+                                                    "is a properly-formatted .txt file.")
             else:
                 return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                "is a .txt file readable with numpy.loadtxt()!")
+                                                "is a properly-formatted .txt file.")
             # if all's good, create the collection and populate it
             coll = create_collection()
             coll.insert( {"entry":"mode", "mode":mode} )
@@ -214,7 +214,7 @@ def show_results():
         for val in zp_cut:
             coll['zeropoints'].insert( {"zp":val} )
         return render_template( "results3.html", spec_ids=map(int, out_model_indices), coords=out_coords,\
-                                    zp=zp_est, band=band )
+                                    zp=round(zp_est,2), band=band )
         
 
 

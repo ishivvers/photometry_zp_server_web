@@ -1,15 +1,18 @@
 ########################################################################
-from flask import redirect, request, session, url_for, render_template # helper functions
+from flask import redirect, request, session, url_for, render_template, Response # helper functions
 from app import app #the flask object itself, created by __init__.py
 import numpy as np
-from time import time
+from time import time, strftime
 import json
+import pymongo as pm
 from my_code import get_SEDs as gs #my library written to predict SEDs
 
 '''
 TO DO:
- - move globals into session, so that apache can thread this, and have a 
-   persistant database that carries around the data for each request.
+ - move globals into a persistant database that carries around the data for each request.
+ - create a key with session (tied to database table), so that apache can thread this.
+ - if using SDSS+2MASS, do not return usnob mags
+ - include link to simbad for each source
 '''
 
 ########################################################################
@@ -87,22 +90,32 @@ def allowed_file(filename):
 def show_results():
     '''
     The main results page, uses results.html (and base.html).
-    
-    Feed template several lists of source info: 
-     ra,dec
-     spectrum_id
-     multiplier/offset to spectrum
-     [ mag estimates ]
-     
     '''
     # case out the three different modes
     if CURRENT_MODE == 1:
         ra,dec,fs = DATA
-        coords, seds, models = gs.catalog( (ra,dec), (fs, fs), return_models=True ) #square box of size fs
-        model_indices, model_offsets = zip(*models)
-        globals()['DATA'] = (seds, model_offsets)
+        coords, seds, models, modes = gs.catalog( (ra,dec), (fs, fs), return_models=True ) #square box of size fs
+        model_indices, errors = zip(*models)
+        globals()['DATA'] = (seds, errors, modes, coords)
         return render_template( "results.html", spec_ids=map(int, model_indices), coords=coords )
-
+        
+    elif CURRENT_MODE == 2:
+        requested_coords = DATA[:,:2]
+        center, size = gs.find_field( requested_coords )
+        coords, seds, models, modes = gs.catalog( center, size, object_coords=requested_coords, return_models=True )
+        model_indices, errors = zip(*models)
+        # match requested coords to returned sources
+        matches = gs.identify_matches( requested_coords, coords)
+        oseds, oerrors, omodes, ocoords, omodel_indices = [],[],[],[],[]
+        for i,match in enumerate(matches):
+            if match != None:
+                oseds.append( seds[match] )
+                oerrors.append( errors[match] )
+                omodes.append( modes[match] )
+                ocoords.append( coords[match] )
+                omodel_indices.append( model_indices[match] )
+        globals()['DATA'] = (oseds, oerrors, omodes, ocoords)
+        return render_template( "results.html", spec_ids=map(int, omodel_indices), coords=ocoords )
 
 
 
@@ -143,13 +156,13 @@ def serve_spectrum():
     
     # push data into a json-able format: a list of dictionaries
     json_list = [{'x': wl[i], 'y': spec[i]} for i in range(len(wl))]
-    return json.dumps( json_list )
+    return Response(json.dumps( json_list ), mimetype='application/json')
 
 
-@app.route('/servemags', methods=['GET'])
-def serve_mags():
+@app.route('/serveflams', methods=['GET'])
+def serve_sed_flams():
     '''
-    Loads magnitudes (obs and modeled) from database created by upload.
+    Loads magnitudes (obs and modeled) from database created by upload, returns FLAM.
     Needs database key (given as url?key=value).
     
     Include, in database, both mags and values in FLAM (erg/s/W^2/A) for plotting.
@@ -158,16 +171,61 @@ def serve_mags():
     sed_mags = DATA[0][sed_index]
     sed_flam = mag2flam( sed_mags, ALL_FILTERS )
     
-    
     # push wavelengths (A) and flam into json-able format
     json_list = [{'x': FILTER_PARAMS[ALL_FILTERS[i]][0], 'y': sed_flam[i], 'name': ALL_FILTERS[i]} for i in range(len(sed_flam))]
-    return json.dumps( json_list )
+    return Response(json.dumps( json_list ), mimetype='application/json')
 
 
+@app.route('/servemags', methods=['GET'])
+def serve_sed_mags():
+    '''
+    Loads magnitudes (obs and modeled) from database created by upload, returns FLAM.
+    Needs database key (given as url?key=value).
+    
+    Include, in database, both mags and values in FLAM (erg/s/W^2/A) for plotting.
+    '''
+    sed_index = int(request.args.get('index',''))    
+    sed_mags = DATA[0][sed_index]
+    sed_errs = DATA[1][sed_index]
+    mode = DATA[2][sed_index]
+    if mode == 1:
+        #USNOB+2MASS
+        modeled = ['y']*6 + ['n']*5
+    else:
+        #SDSS+2MASS
+        modeled = ['n']*5 + ['y']*3 + ['n']*3
+    # push everything into json-able format
+    json_list = [{'x': FILTER_PARAMS[ALL_FILTERS[i]][0], 'y': sed_mags[i], 'err': sed_errs[i], \
+                 'modeled': modeled[i], 'name': ALL_FILTERS[i]} for i in range(len(sed_mags))]
+    return Response(json.dumps( json_list ), mimetype='application/json')
 
 
+@app.route('/servecatalog', methods=['GET'])
+def serve_full_catalog():
+    '''
+    Returns formatted & human-readable ASCII catalog of all sources.
+    '''
+    mags, errs, mods, coords = DATA
+    catalog_txt = \
+    "# Catalog produced by the Photometric Estimate Server\n"+\
+    "# <website>\n" +\
+    "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
+    "#\n#  Mode is the set of observations used to fit the model\n" +\
+    "#   0=SDSS+2MASS, 1=USNOB+2MASS\n"+\
+    "# " + "\t".join(["RA","DEC"] + list(ALL_FILTERS) + [val+"_err" for val in ALL_FILTERS]) + "\tMode\n"
+    for i, sed in enumerate(mags):
+        catalog_txt += "\t".join(map(lambda x: "%.6f"%x, coords[i]))+"\t"
+        catalog_txt += "\t".join(map(lambda x: "%.3f"%x, sed))+"\t"
+        catalog_txt += "\t".join(map(lambda x: "%.4f"%x, errs[i]))+"\t"
+        if mods[i] == ['y']*6 + ['n']*5:
+            catalog_txt += "1\n"
+        else:
+            catalog_txt += "1\n"
+    response = Response(catalog_txt, mimetype='text/plain')
+    response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
+    return response
 
-
+    
 #######################################################################
 def mag2flam( magnitudes, bands ):
     '''

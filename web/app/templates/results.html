@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block active2 %} class="active" {% endblock %}
+
 {% block content %}
 <div class="container-fluid">
   <div class="row-fluid">
@@ -9,7 +11,7 @@
           <li class="nav-header">Sources (RA,DEC)</li>
 		  <!-- add class="active" to add highlighting -->
 		  {% for spec_id in spec_ids %}
-            <li><a href="#" onclick="draw_spectrum({{ spec_id }}, {{ loop.index-1 }})"> ({{ coords[loop.index-1][0] }}, {{ coords[loop.index-1][1] }}) </a></li>
+            <li id="source_{{loop.index-1}}"><a href="#" onclick="draw_spectrum({{ spec_id }}, {{ loop.index-1 }})"> ({{ coords[loop.index-1][0] }}, {{ coords[loop.index-1][1] }}) </a></li>
 		  {% endfor %}
         </ul>
       </div><!--/.well -->
@@ -194,6 +196,18 @@ function draw() {
 
 // function to change the body text, displaying feedback for selected source
 function update_text(sed_index) {
+	// first set the selected source as active
+	//  remove active class from previous selection, and apply it to new selection
+	var all_active_elements = document.getElementsByClassName("active");
+	for (var i=0; i<all_active_elements.length; i++) { 
+		if (all_active_elements[i].id !='') { // if id='', then this is a top navbar element
+			all_active_elements[i].className = "";
+		};
+	};
+	var list_element = document.getElementById("source_"+String(sed_index));
+	list_element.className = "active";
+	
+	// then update the magnitudes table
 	var xmlhttp=new XMLHttpRequest();
 	xmlhttp.onreadystatechange=function() {
 	  if (xmlhttp.readyState==4 && xmlhttp.status==200) {

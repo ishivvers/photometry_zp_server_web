@@ -27,8 +27,17 @@
 	
     <script src="static/js/jquery.js"></script>
     <script src="static/js/bootstrap-transition.js"></script>
+    <script src="static/js/bootstrap-alert.js"></script>
+    <script src="static/js/bootstrap-modal.js"></script>
     <script src="static/js/bootstrap-dropdown.js"></script>
+    <script src="static/js/bootstrap-scrollspy.js"></script>
+    <script src="static/js/bootstrap-tab.js"></script>
+    <script src="static/js/bootstrap-tooltip.js"></script>
+    <script src="static/js/bootstrap-popover.js"></script>
+    <script src="static/js/bootstrap-button.js"></script>
     <script src="static/js/bootstrap-collapse.js"></script>
+    <script src="static/js/bootstrap-carousel.js"></script>
+    <script src="static/js/bootstrap-typeahead.js"></script>
     </head>
     
     <body>
@@ -43,9 +52,9 @@
 		<p class="brand">All-Sky Photometric Estimates</p>
           <div class="nav-collapse collapse">
             <ul class="nav">
-              <li{% block active1 %}{% endblock %}><a href="{{ url_for('show_upload') }}">Upload</a></li>
+              <li{% block active1 %}{% endblock %}><a href="{{ url_for('show_upload') }}">Home</a></li>
               <li{% block active2 %}{% endblock %}><a href="{{ url_for('show_results') }}">Results</a></li>
-              <li{% block active3 %}{% endblock %}><a href="{{ url_for('show_contact') }}">Contact</a></li>
+              <li{% block active3 %}{% endblock %}><a href="{{ url_for('show_info') }}">Info</a></li>
             </ul>
           </div><!--/.nav-collapse -->
         </div><!--/container -->

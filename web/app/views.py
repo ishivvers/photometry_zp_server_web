@@ -9,7 +9,6 @@ from my_code import get_SEDs as gs #my library written to predict SEDs
 
 '''
 TO DO:
- - make mode 3 work
  - include link to simbad for each source
 '''
 
@@ -37,8 +36,14 @@ del(MODELS) #just to free memory
 # initialize the database
 DB = pm.MongoClient().PZserver
 
+# the on-disk location of the spectra (faster than DB call, at least on SSD - may not be true on hard disk)
+spectra_loc = '/Users/isaac/Working/code/photo_zp_server/web/app/static/spectra/'
+
+# the maximum number of sources to show on the spectrum page (does not affect catalog download)
+max_disp = 300
+
 #######################################################################
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def show_upload():
     '''
     Uses upload.html (and base.html).
@@ -135,11 +140,11 @@ def show_results():
             model_indices.append( obj["models"] )
             coords.append( obj["coords"] )
         if (mode == 1) or (mode == 2):
-            render_template( "results12.html", spec_ids=map(int, model_indices), coords=coords )
+            render_template( "results12.html", spec_ids=map(int, model_indices[:max_disp]), coords=coords[:max_disp] )
         elif mode == 3:
             band = coll.find_one( {"entry":"passband"} )["passband"]
             zp_est = coll.find_one( {"entry":"zeropoint_estimate"})["zp"]
-            return render_template( "results3.html", spec_ids=map(int, model_indices), coords=coords,\
+            return render_template( "results3.html", spec_ids=map(int, model_indices[:max_disp]), coords=coords[:max_disp],\
                                         zp=round(zp_est,2), band=band )
             
     
@@ -153,7 +158,7 @@ def show_results():
         for i in range(len(seds)):
             coll['data'].insert( {"index":i, "sed":seds[i].tolist(), "errors":errors[i].tolist(),\
                                     "mode":modes[i], "coords":coords[i].tolist(), "models":int(model_indices[i])} )
-        return render_template( "results12.html", spec_ids=map(int, model_indices), coords=coords )
+        return render_template( "results12.html", spec_ids=map(int, model_indices[:max_disp]), coords=coords[:max_disp] )
         
     elif mode == 2:
         requested_coords = []
@@ -177,7 +182,7 @@ def show_results():
                 out_model_indices.append( model_indices[match] )
                 out_coords.append( coords[match] )
                 i +=1
-        return render_template( "results12.html", spec_ids=map(int, out_model_indices), coords=out_coords )
+        return render_template( "results12.html", spec_ids=map(int, out_model_indices[:max_disp]), coords=out_coords[:max_disp] )
     
     elif mode == 3:
         band = coll.find_one( {"entry":"passband"} )["passband"]
@@ -213,18 +218,19 @@ def show_results():
         coll.insert( {"entry":"zeropoint_estimate", "zp":zp_est} )
         for val in zp_cut:
             coll['zeropoints'].insert( {"zp":val} )
-        return render_template( "results3.html", spec_ids=map(int, out_model_indices), coords=out_coords,\
+        return render_template( "results3.html", spec_ids=map(int, out_model_indices[:max_disp]), coords=out_coords[:max_disp],\
                                     zp=round(zp_est,2), band=band )
         
 
 
 #######################################################################
-@app.route('/contact', methods=['GET'])
-def show_contact():
+@app.route('/info', methods=['GET'])
+def show_info():
     '''
-    A simple contacts page, with pointers back to my site.
+    A detailed description of the photometric estimates this produces.
     '''
-    return 'contacts!'
+    return render_template( "info.html" )
+
 
 @app.route('/servespectrum', methods=['GET'])
 def serve_spectrum():
@@ -235,7 +241,7 @@ def serve_spectrum():
     '''
     spec = int(request.args.get('spec',''))
     sed_index = int(request.args.get('index',''))
-    f = '/Users/isaac/Working/code/photo_zp_server/web/app/static/spectra/pickles_uk_{}.npy'.format(spec)
+    f = spectra_loc+'pickles_uk_{}.npy'.format(spec)
     dat = np.load( f )
     # truncate the data below 2500AA    
     wl = dat[0][ dat[0]>2500 ] #Angstroms
@@ -315,19 +321,19 @@ def serve_full_catalog():
     #mags, errs, mods, coords = DATA
     catalog_txt = \
     "# Catalog produced by the Photometric Estimate Server\n"+\
-    "# <website>\n" +\
+    "# http://classy.astro.berkeley.edu/photozpe/ \n" +\
     "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
     "#\n#  Mode is the set of observations used to fit the model\n" +\
     "#   0=SDSS+2MASS, 1=USNOB+2MASS\n"+\
-    "# " + "\t".join(["RA","DEC"] + list(ALL_FILTERS) + [val+"_err" for val in ALL_FILTERS]) + "\tMode\n"
+    "# " + "{}      {}       ".format("RA","DEC") + (' '*6).join(ALL_FILTERS) + " "*6 + '  '.join([val+"_err" for val in ALL_FILTERS]) + "  Mode\n"
     
     coll = DB[ session['sid'] ]
     curs = coll['data'].find()
     for i in range(curs.count()):
         obj = curs.next()
-        catalog_txt += "\t".join(map(lambda x: "%.6f"%x, obj["coords"]))+"\t"
-        catalog_txt += "\t".join(map(lambda x: "%.3f"%x, obj["sed"]))+"\t"
-        catalog_txt += "\t".join(map(lambda x: "%.4f"%x, obj["errors"]))+"\t"
+        catalog_txt += " ".join(map(lambda x: "%.6f"%x, obj["coords"]))+" "
+        catalog_txt += " ".join(map(lambda x: "%.3f"%x, obj["sed"]))+" "
+        catalog_txt += " ".join(map(lambda x: "%.4f"%x, obj["errors"]))+" "
         catalog_txt += str(obj["mode"])+"\n"
         
     response = Response(catalog_txt, mimetype='text/plain')

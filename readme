@@ -1,4 +1,24 @@
 TO DO:
-- contact page
-- info page
 - put into apache
+
+
+#############   scratch:   #############
+
+### to compare timing differences in numpy load-to-disk or call from DB for spectra
+def numpy2string():
+	spectra_loc = '/Users/isaac/Working/code/photo_zp_server/web/app/static/spectra/'
+	d = np.load( spectra_loc+'pickles_uk_99.npy' )
+	string = ''
+	for i in range(d.shape[-1]):
+	    string += '{} {}\n'.format( d[0,i], d[1,i] )
+	return string
+
+def db2string():
+	coll = DB['spectra'][99]
+	curs = coll.find()
+	string = ''
+	for i in range( curs.count() ):
+		obj = curs.next()
+		string += '{} {}\n'.format( obj['lam'], obj['flam'] )
+	return string
+

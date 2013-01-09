@@ -8,6 +8,7 @@
  * Designed and built with all the love in the world @twitter by @mdo and @fat.
  */
 
+
 article,
 aside,
 details,
@@ -1000,7 +1001,7 @@ pre code {
 }
 
 .pre-scrollable {
-  max-height: 820px;
+  max-height: 840px;
   overflow-y: scroll;
 }
 

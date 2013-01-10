@@ -36,9 +36,6 @@ del(MODELS) #just to free memory
 # initialize the database
 DB = pm.MongoClient().PZserver
 
-# the on-disk location of the spectra (faster than DB call, at least on SSD - may not be true on hard disk)
-spectra_loc = '/Users/isaac/Working/code/photo_zp_server/web/app/static/spectra/'
-
 # the maximum number of sources to show on the spectrum page (does not affect catalog download)
 max_disp = 300
 
@@ -241,7 +238,7 @@ def serve_spectrum():
     '''
     spec = int(request.args.get('spec',''))
     sed_index = int(request.args.get('index',''))
-    f = spectra_loc+'pickles_uk_{}.npy'.format(spec)
+    f = app.config['SPECTRA_FOLDER']+'pickles_uk_{}.npy'.format(spec)
     dat = np.load( f )
     # truncate the data below 2500AA    
     wl = dat[0][ dat[0]>2500 ] #Angstroms

@@ -1,0 +1,47 @@
+{% extends "results_base.html" %}
+
+{% block content2 %}
+<div class="row-fluid">
+  <div class="span6" id="feedback1">
+    <h2>Magnitudes</h2>
+		<table class="table table-condensed">
+			<tr><td><b>Band</b></td>
+				<td><b>Mag</b></td>
+				<td><b>&sigma;</b></td>
+				<td><b>Modeled?</b></td></tr>
+			<tr id='tr_u'><td><b>u</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+			<tr id='tr_g'><td><b>g</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+			<tr id='tr_r'><td><b>r</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+			<tr id='tr_i'><td><b>i</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+			<tr id='tr_z'><td><b>z</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+			<tr id='tr_y'><td><b>y</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+			<tr id='tr_B'><td><b>B</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+			<tr id='tr_R'><td><b>R</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+			<tr id='tr_J'><td><b>J</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+			<tr id='tr_H'><td><b>H</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+			<tr id='tr_K'><td><b>K</b></td>
+				<td>-</td><td>-</td><td>-</td></tr>
+		</table>
+  </div><!--/span-->
+  <div class="span6">
+    <h2>Catalog</h2>
+		<p>
+			Click below to download a full computer-readable (space-separated) ASCII catalog,
+			including all magnitudes and errors, for these sources.
+		</p>
+		<form method="get" action="{{ url_for('serve_full_catalog') }}">
+		<input type="submit" class="btn btn-primary btn-small" value="Download"/>
+		</form>
+  </div><!--/span-->
+</div><!--/row-->
+{% endblock %}

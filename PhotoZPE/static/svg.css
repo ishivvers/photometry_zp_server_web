@@ -1,0 +1,40 @@
+/* D3 and SVG styling options */
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.axis text {
+  font: 15px sans-serif;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.circle {
+  fill: #fff;
+  stroke-width: 1.5px;
+}
+
+.loading {
+    font: 15px sans-serif;
+    color: steelblue;
+}
+
+.labels {
+    font: 8px sans-serif;
+    color: steelblue;
+}
+
+.bar rect {
+  fill: steelblue;
+  shape-rendering: crispEdges;
+}
+
+.bar text {
+  fill: #fff;
+}

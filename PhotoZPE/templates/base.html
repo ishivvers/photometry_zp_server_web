@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+
+{#
+	This is the base template for the photometric ZP server, using the 
+	twitter bootstrap.
+	
+    ADJUST SO THAT ALL MODULES HAVE OVERFLOW X BEHAVIOR (clipping)
+#}
+
+<html>
+    <head>
+    <meta charset="utf-8">
+    <title>All-Sky Photometry Server</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A multi-band photometric estimate server with all-sky coverage.">
+    <meta name="author" content="Isaac Shivvers">
+
+    <link href="static/bootstrap.css" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px;
+      }
+    </style>
+    <link href="static/bootstrap-responsive.css" rel="stylesheet">
+	<link href="static/svg.css" rel="stylesheet">
+	<link rel="shortcut icon" href="static/favicon.ico" type="image/x-icon">
+	
+    <script src="static/js/jquery.js"></script>
+    <script src="static/js/bootstrap-transition.js"></script>
+    <script src="static/js/bootstrap-alert.js"></script>
+    <script src="static/js/bootstrap-modal.js"></script>
+    <script src="static/js/bootstrap-dropdown.js"></script>
+    <script src="static/js/bootstrap-scrollspy.js"></script>
+    <script src="static/js/bootstrap-tab.js"></script>
+    <script src="static/js/bootstrap-tooltip.js"></script>
+    <script src="static/js/bootstrap-popover.js"></script>
+    <script src="static/js/bootstrap-button.js"></script>
+    <script src="static/js/bootstrap-collapse.js"></script>
+    <script src="static/js/bootstrap-carousel.js"></script>
+    <script src="static/js/bootstrap-typeahead.js"></script>
+    </head>
+    
+    <body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+		<p class="brand">All-Sky Photometric Estimates</p>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li{% block active1 %}{% endblock %}><a href="{{ url_for('show_upload') }}">Home</a></li>
+              <li{% block active2 %}{% endblock %}><a href="{{ url_for('show_results') }}">Results</a></li>
+              <li{% block active3 %}{% endblock %}><a href="{{ url_for('show_info') }}">Info</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div><!--/container -->
+      </div><!--/navbar-inner -->
+    </div><!--/navbar -->
+
+	{%block content %}{% endblock %}
+
+    </body>
+</html>

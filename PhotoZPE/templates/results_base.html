@@ -123,9 +123,18 @@ function draw_spectrum( spec_id, sed_index ) {
 
 		// bind the data to our line plot, using the line generator above
 		svg.select("path.line").data( [data] );
+
+       // within this callback, make a call to build the scatterplot
+       draw_scatterplot( sed_index );
+       // draw the image
+       draw();
+       // and update the text
+       update_text(sed_index);
 	});
-	
-	// now insert the scatterplot with a json call to serve_mags
+};
+
+function draw_scatterplot( sed_index ) {
+	// insert the scatterplot with a json call to serve_mags
 	d3.json( "{{ url_for('serve_sed_flams') }}?index="+String(sed_index), function(data) {
 		/* I'd like to make sure that no observed mags are off the plot (i.e. for one bad point),
 		    but this is not working and I do not understand why. Ignoring problem for now.
@@ -137,7 +146,7 @@ function draw_spectrum( spec_id, sed_index ) {
 			yScale.domain()[0] = d3.min(data, function(d){return d.y;});
 		}
 		*/
-		
+
 		svg.selectAll("circle")
 			.data(data).enter().append("circle")
 			.attr("class", "circle")
@@ -159,13 +168,7 @@ function draw_spectrum( spec_id, sed_index ) {
 				.attr("y", yScale(data[i].y)+5)
 				.text(data[i].name);
 		};
-			
-		// draw the image
-		draw();
 	});
-	
-	// now update the text
-	update_text(sed_index);
 };
 
 function draw() {

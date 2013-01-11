@@ -24,7 +24,7 @@ FILTER_PARAMS =  {'u': (3551., 8.5864e-9), 'g': (4686., 4.8918e-9),
 ALL_FILTERS = np.array(['u','g','r','i','z','y','B','R','J','H','K'])
 
 try:
-    MODELS = np.load( '/home/isaac/Working/code/DECam/my_code/all_models_P.npy','r' )
+    MODELS = np.load( '/var/www/photozpe/my_code/all_models_P.npy','r' )
 except:
     raise IOError('cannot find models file')
 # convert the MODELS np array into a dictionary of arrays, so we can call by index (faster)
@@ -40,6 +40,7 @@ DB = pm.MongoClient().PZserver
 max_disp = 300
 
 #######################################################################
+@app.route('/upload', methods=['GET', 'POST'])
 @app.route('/', methods=['GET', 'POST'])
 def show_upload():
     '''
@@ -66,6 +67,8 @@ def show_upload():
         elif mode == 2:
             # produce matched catalog
             source_file = request.files["source_file"]
+            print source_file
+
             if source_file and allowed_file(source_file.filename):
                 # try to parse with numpy
                 try:
@@ -127,9 +130,9 @@ def show_results():
     coll = DB[ session['sid'] ]
     # case out the three different modes
     mode = coll.find_one( {"entry":"mode"} )['mode']
-    
+
     # first, test to see whether we've already built a database, and simply display it
-    if coll['data'].find_one():
+    if coll['data'].find_one() != None:
         curs = coll['data'].find()
         model_indices, coords = [], []
         for i in range(curs.count()):
@@ -137,7 +140,7 @@ def show_results():
             model_indices.append( obj["models"] )
             coords.append( obj["coords"] )
         if (mode == 1) or (mode == 2):
-            render_template( "results12.html", spec_ids=map(int, model_indices[:max_disp]), coords=coords[:max_disp] )
+            return render_template( "results12.html", spec_ids=map(int, model_indices[:max_disp]), coords=coords[:max_disp] )
         elif mode == 3:
             band = coll.find_one( {"entry":"passband"} )["passband"]
             zp_est = coll.find_one( {"entry":"zeropoint_estimate"})["zp"]
@@ -318,7 +321,7 @@ def serve_full_catalog():
     #mags, errs, mods, coords = DATA
     catalog_txt = \
     "# Catalog produced by the Photometric Estimate Server\n"+\
-    "# http://classy.astro.berkeley.edu/photozpe/ \n" +\
+    "# http://classy.astro.berkeley.edu/ \n" +\
     "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
     "#\n#  Mode is the set of observations used to fit the model\n" +\
     "#   0=SDSS+2MASS, 1=USNOB+2MASS\n"+\

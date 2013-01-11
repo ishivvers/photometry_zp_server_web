@@ -12,7 +12,7 @@ from os import listdir, system
 
 age_cut = 1 #days
 DB = pm.MongoClient().PZserver
-tmp_folder = '/Users/isaac/Working/code/photo_zp_server/web/tmp/'
+tmp_folder = '/var/www/photozpe/tmp/'
 
 now = int(time())
 time_cut = now - age_cut*60*60*24

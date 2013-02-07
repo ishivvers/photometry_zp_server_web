@@ -24,7 +24,8 @@ FILTER_PARAMS =  {'u': (3551., 8.5864e-9), 'g': (4686., 4.8918e-9),
 ALL_FILTERS = np.array(['u','g','r','i','z','y','B','R','J','H','K'])
 
 try:
-    MODELS = np.load( '/var/www/photozpe/my_code/all_models_P.npy','r' )
+    #MODELS = np.load( '/var/www/photozpe/my_code/all_models_P.npy','r' )
+    MODELS = np.load( 'all_models_P.npy', 'r' )
 except:
     raise IOError('cannot find models file')
 # convert the MODELS np array into a dictionary of arrays, so we can call by index (faster)
@@ -116,7 +117,7 @@ def create_collection():
     session['sid'] = sid #I use the flask.sessions interface to keep track of data across requests
     return DB[sid]
     
-ALLOWED_EXTENSIONS = set(['txt','dat'])
+ALLOWED_EXTENSIONS = set(['txt','dat', 'cat'])
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
@@ -144,8 +145,9 @@ def show_results():
         elif mode == 3:
             band = coll.find_one( {"entry":"passband"} )["passband"]
             zp_est = coll.find_one( {"entry":"zeropoint_estimate"})["zp"]
+            zp_mad = coll.find_one( {"entry":"zeropoint_estimate"})["mad"]
             return render_template( "results3.html", spec_ids=map(int, model_indices[:max_disp]), coords=coords[:max_disp],\
-                                        zp=round(zp_est,2), band=band )
+                                        zp=round(zp_est,2), mad=round(zp_mad,2), band=band )
             
     
     if mode == 1:
@@ -153,12 +155,11 @@ def show_results():
         ra = search_field['ra']
         dec = search_field['dec']
         fs = search_field['fs']
-        coords, seds, models, modes = gs.catalog( (ra,dec), (fs, fs), return_models=True ) #square box of size fs
-        model_indices, errors = zip(*models)
+        coords, seds, models, errors, modes = gs.catalog( (ra,dec), (fs, fs), return_models=True ) #square box of size fs
         for i in range(len(seds)):
             coll['data'].insert( {"index":i, "sed":seds[i].tolist(), "errors":errors[i].tolist(),\
-                                    "mode":modes[i], "coords":coords[i].tolist(), "models":int(model_indices[i])} )
-        return render_template( "results12.html", spec_ids=map(int, model_indices[:max_disp]), coords=coords[:max_disp] )
+                                    "mode":modes[i], "coords":coords[i].tolist(), "models":int(models[i])} )
+        return render_template( "results12.html", spec_ids=map(int, models[:max_disp]), coords=coords[:max_disp] )
         
     elif mode == 2:
         requested_coords = []
@@ -169,8 +170,7 @@ def show_results():
         requested_coords = np.array(requested_coords) #put into numpy array for sake of functions below
         
         center, size = gs.find_field( requested_coords )
-        coords, seds, models, modes = gs.catalog( center, size, object_coords=requested_coords, return_models=True )
-        model_indices, errors = zip(*models)
+        coords, seds, models, errors, modes = gs.catalog( center, size, object_coords=requested_coords, return_models=True )
         # match requested coords to returned sources
         matches = gs.identify_matches( requested_coords, coords)
         out_coords, out_model_indices = [],[]
@@ -178,8 +178,8 @@ def show_results():
         for match in matches:
             if match != None:
                 coll['data'].insert( {"index":i, "sed":seds[match].tolist(), "errors":errors[match].tolist(),\
-                                        "mode":modes[match], "coords":coords[match].tolist(), "models":int(model_indices[match])} )
-                out_model_indices.append( model_indices[match] )
+                                        "mode":modes[match], "coords":coords[match].tolist(), "models":int(models[match])} )
+                out_model_indices.append( models[match] )
                 out_coords.append( coords[match] )
                 i +=1
         return render_template( "results12.html", spec_ids=map(int, out_model_indices[:max_disp]), coords=out_coords[:max_disp] )
@@ -193,33 +193,32 @@ def show_results():
             requested_coords.append( [obj['ra'], obj['dec']] )
             inst_mags.append( obj['inst_mag'] )
         requested_coords = np.array(requested_coords) #put into numpy array for sake of functions below
+        inst_mags = np.array(inst_mags)
         
         center, size = gs.find_field( requested_coords )
-        coords, seds, models, modes = gs.catalog( center, size, object_coords=requested_coords, return_models=True )
-        model_indices, errors = zip(*models)
-        # match requested coords to returned sources
-        matches = gs.identify_matches( requested_coords, coords)
-        out_coords, out_model_indices, zp = [],[],[]
+        coords, seds, models, errors, modes = gs.catalog( center, size, object_coords=requested_coords, return_models=True )
+        
+        # pull out only the band we care about
+        mod_mags = np.array([ sss[ ALL_FILTERS==band ][0] for sss in seds ])
+        
+        # calculate zeropoint
+        median_zp, mad_zp, matches, all_zps = gs.calc_zeropoint( requested_coords, coords, inst_mags, mod_mags, return_zps=True)
+        coll.insert( {"entry":"zeropoint_estimate", "zp":median_zp, "mad":mad} )
+        for val in all_zps:
+            coll['zeropoints'].insert( {"zp":val} )
+        # put into db
+        out_coords, out_model_indices = [],[]
         i = 0
         for j,match in enumerate(matches):
             if match != None:
                 coll['data'].insert( {"index":i, "sed":seds[match].tolist(), "errors":errors[match].tolist(),\
-                                        "mode":modes[match], "coords":coords[match].tolist(), "models":int(model_indices[match])} )
-                out_model_indices.append( model_indices[match] )
+                                        "mode":modes[match], "coords":coords[match].tolist(), "models":int(models[match])} )
+                out_model_indices.append( models[match] )
                 out_coords.append( coords[match] )
-                observed = seds[match][ ALL_FILTERS==band ][0]
-                instrumental = inst_mags[j]
-                zp.append( observed-instrumental )
                 i +=1
-        # finally, calculate the zeropoint estimates for real
-        zp = np.array(zp)
-        zp_cut = zp[ np.abs(zp-np.mean(zp)) < 2*np.std(zp) ]
-        zp_est = np.mean(zp_cut)
-        coll.insert( {"entry":"zeropoint_estimate", "zp":zp_est} )
-        for val in zp_cut:
-            coll['zeropoints'].insert( {"zp":val} )
+
         return render_template( "results3.html", spec_ids=map(int, out_model_indices[:max_disp]), coords=out_coords[:max_disp],\
-                                    zp=round(zp_est,2), band=band )
+                                    zp=round(median_zp,2), mad=round(mad_zp,2), band=band )
         
 
 

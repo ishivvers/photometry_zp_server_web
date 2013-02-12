@@ -24,8 +24,7 @@ FILTER_PARAMS =  gs.FILTER_PARAMS
 ALL_FILTERS = np.array(gs.ALL_FILTERS)
 
 try:
-    #MODELS = np.load( '/var/www/photozpe/my_code/all_models_P.npy','r' )
-    MODELS = np.load( 'all_models_P.npy', 'r' )
+    MODELS = np.load( app.config['SPECTRA_FOLDER']+'all_models_P.npy', 'r' )
 except:
     raise IOError('cannot find models file')
 # convert the MODELS np array into a dictionary of arrays, so we can call by index (faster)
@@ -33,6 +32,10 @@ MODELS_DICT = {}
 for model in MODELS[1:]:
     MODELS_DICT[model[0]] = model[1:]
 del(MODELS) #just to free memory
+
+try:
+    SPEC_TYPES = np.loadtxt( app.config['SPECTRA_FOLDER']+'pickles_types.txt' )
+    
 
 # initialize the database
 DB = pm.MongoClient().PZserver
@@ -118,7 +121,11 @@ def create_collection():
 
 ALLOWED_EXTENSIONS = set(['txt','dat', 'cat'])
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+    '''
+    For now, simply return True.  Change if you want to constrain input filetypes.
+    '''
+    return True
+    #return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -139,6 +146,11 @@ def show_results():
         # see whether a session ID was passed as an argument
         sid = request.args.get('sid')
         coll = DB[ sid ]
+        session['sid'] = sid
+        # The gymnastics above are neccessary because of strange errors
+        #  when accessing the database wit a redefined session['sid'].
+        #  I don't fully understand what was wrong before, and don't fully
+        #  understand why this works.
     except:
         try:
             coll = DB[ session['sid'] ]
@@ -379,13 +391,13 @@ def api_handler():
     Creates and returns (in JSON or ASCII format) a catalog of sources in a field,
      including both observed and modeled mags.  If fed an input file, attempts to 
      process it and provide cross-matched models and zeropoint estimate as well.
-    If a 'GET' request, the url keys are: 'ra','dec','size', optional:'type'
+    If a 'GET' request, the url keys are: 'ra','dec','size', optional:'response'
     If a 'POST', a properly-formatted file must be uploaded, and a passband url key
      ('band') as well as a mode key ('mode') must be passed along.
     '''
     response_type = 'ascii' #what type of response to give. {'ascii', 'json'}
     try:
-        typ = request.args.get('type')
+        typ = request.args.get('response')
         if 'json' in typ.lower():
             response_type = 'json'
     except:
@@ -422,7 +434,7 @@ def api_handler():
         if response_type == 'json':
             return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
         elif response_type == 'ascii':
-            ascii_out = build_ascii( json_list[1:], "Query ID: {}".format(json_list[0]['query_id']) )
+            ascii_out = build_ascii( json_list[1:], "Query ID: {}".format(json_list[0]['query_ID']) )
             response = Response(ascii_out, mimetype='text/plain')
             response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
             return response
@@ -431,7 +443,6 @@ def api_handler():
         Produce and return a cross-matched catalog, perhaps with zeropoint estimate.
         '''
         try:
-            band = request.args.get('band')
             mode = int( request.args.get('mode') )
         except:
             return Response( '{ success:false, message:"Request not formatted properly."}',
@@ -481,6 +492,11 @@ def api_handler():
                 return response
         
         elif mode == 3:
+            try:
+                band = request.args.get('band')
+            except:
+                return Response( '{ success:false, message:"Request not formatted properly."}',
+                                mimetype='application/json')
             # produce matched catalog and zeropoint estimate
             source_file = request.files["source_file"]
             if source_file and allowed_file(source_file.filename):

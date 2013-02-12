@@ -24,7 +24,8 @@
 		  magnitudes generated through photometry on images) and the true magnitudes for a set of observations;
 		  i.e. the photometric zeropoint.
 	   </p>
-	
+
+	  <hr>	
 	  <h3>Characteristic Errors</h3>
 	   <p>Though the estimates for individual sources can, at worst, be off by as much
 		  as .5 mag, I have worked to get the mean offset for any ensemble of
@@ -39,7 +40,7 @@
 		  <div class="row-fluid">
 			<div class="span1"></div>
 			<div class="span10 pagination-centered">
-			  <img src="static/sdss_errs.png" width=550 height=550 alt="SDSS error histogram">
+			  <img src="static/img/sdss_errs.png" width=550 height=550 alt="SDSS error histogram">
 			  <p small>Histograms of the differences between predicted and true values for SDSS
 				<i>z</i> magnitudes for sources in 5 arbitrary SDSS fields, as estimated by the other
 				SDSS observations and 2-MASS.  Each histogram displays sources within a .5&deg; box
@@ -79,8 +80,8 @@
 		  <div class="row-fluid">
 			<div class="span1"></div>
 			<div class="span10 pagination-centered">
-			  <img src="static/usnob_errs_z.png" width=400 height=400 alt="USNO-B1 error histogram">
-			  <img src="static/usnob_errs_g.png" width=400 height=400 alt="USNO-B1 error histogram">
+			  <img src="static/img/usnob_errs_z.png" width=400 height=400 alt="USNO-B1 error histogram">
+			  <img src="static/img/usnob_errs_g.png" width=400 height=400 alt="USNO-B1 error histogram">
 			  <p>Histograms of the differences between predicted and true values for SDSS
 				<i>z</i> and <i>g</i> magnitudes for sources in 5 arbitrary SDSS fields, as estimated by
 				the USNO-B1 and	2-MASS observations.  Each histogram displays sources within a .5&deg; box
@@ -89,6 +90,91 @@
 			<div class="span1"></div>
 		  </div><!--/row-->
 
+		<hr>
+		<h3>API</h3>
+		<p>
+		  This site also offers an API as a webservice, so you can run queries from the commandline
+		  or within a script.  Requests are sent as a URL over HTTP, and the results can be obtained
+		  in either JSON or a simple ASCII table format.  The same three modes of operation are available
+		  through the API as through the main website, and the website interface can be used to examine
+		  the results of any API request made within the last day.  Any posted files must be simple ascii 
+		  tables, with the first two columns RA and DEC (decimal degrees), and a third column of instrumental
+		  magnitudes if using mode 3.
+		</p>
+		<div class="row-fluid">
+		<div class="span1"></div>
+		  <div class="span10">
+			 <h3>1</h3>
+			 <i>Produce a catalog of a specific field.</i><br>
+			  <strong>Required:</strong>
+			  <ul>
+				<li><b>mode:</b> 1</li>
+				<li><b>ra:</b> RA in decimal degrees</li>
+				<li><b>dec:</b> DEC in decimal degrees</li>
+				<li><b>size:</b> Field Size in arcseconds (max: 7200" or 2&deg;)</li>
+			  </ul>
+		  <strong>Optional:</strong>
+		  <ul>
+			<li><b>response:</b> ascii (default) or json</li>
+		  </ul>
+		  <strong>Example:</strong>
+			<pre>curl 'http://127.0.0.1:5000/api?mode=1&amp;ra=200.&amp;dec=20.&amp;size=450.&amp;type=ascii'</pre>
+		  </div><!--/span-->
+		<div class="span1"></div>
+		</div><!--/row-->
+		
+		<div class="row-fluid">
+		<div class="span1"></div>
+		  <div class="span10">
+			<h3>2</h3>
+			<i>Produce a catalog for a set of stars.</i><br>
+			  <strong>Required:</strong>
+			  <ul>
+				<li><b>mode:</b> 2</li>
+				<li><b>posted file</b></li>
+			  </ul>
+			  <strong>Optional:</strong>
+			  <ul>
+				<li><b>response:</b> ascii (default) or json</li>
+			  </ul>
+			  <strong>Example:</strong>
+				<pre>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=2&amp;type=ascii'</pre>
+		  </div> <!--/span-->
+		<div class="span1"></div>
+		</div><!--/row-->
+		
+		<div class="row-fluid">
+		<div class="span1"></div>
+		  <div class="span10">
+			<h3>3</h3>
+			<i>Produce a catalog and a photometric zeropoint for a set of observations.</i><br>
+			  <strong>Required:</strong>
+			  <ul>
+				<li><b>mode:</b> 3</li>
+				<li><b>band:</b> Passband of observations</li>
+				<li><b>posted file</b></li>
+			  </ul>
+			  <strong>Optional:</strong>
+			  <ul>
+				<li><b>response:</b> ascii (default) or json</li>
+			  </ul>
+			  <strong>Example:</strong>
+				<pre>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=2&amp;band=y&amp;type=ascii'</pre>
+		  </div> <!--/span-->
+		<div class="span1"></div>
+		</div><!--/row-->
+		<div class="row-fluid">
+			<h3>Examining API results:</h3>
+			<p>Each API response includes a string of numbers called the "Query ID", which looks something like "1360698575_1157" -
+				this allows you to examine the results of any API call through the full web interface.
+				To inspect the catalog, pass your Query ID as a
+			   URL query string to the Results page with the keyword 'sid'.
+			</p>
+			<strong>Example:</strong>
+			  <pre>http://127.0.0.1:5000/results?sid=YOUR_QUERY_ID</pre>
+		</div><!--/row-->
+		
+		<hr>
 		<h3>Open-Source Development</h3>
 		<p>
 		  This project uses a bunch of awesome open-source software and web development tools:
@@ -105,6 +191,17 @@
 		  If you would like a copy of the codebase, if you have any questions about it or the website, or if you
 		  have any comments or suggestions, simply shoot me an email - I'd like to hear from you! <br>
 		  <i>ishivvers (at) astro (dot) berkeley (dot) edu</i>
+		
+		<hr>
+		<h3>Affiliations</h3>
+		<a target="_blank" href="http://astro.berkeley.edu/">
+		<img src="static/img/berkeley_seal_T.gif" width=150 height=150 alt="UC Berkeley"></a>
+		<a target="_blank" href="http://cftd.info/">
+		<img src="static/img/cftdi_bg.png" width=250 height=160 alt="CfTDI"></a>
+		<a target="_blank" href="http://www.nsf.gov/">
+		<img src="static/img/nsf_logo.gif" width=160 height=160 alt="NSF"></a>
+		<p><br><em>Codebase and site developed by <a target="_blank" href="http://astro.berkeley.edu/~ishivvers/">Isaac Shivvers</a>, UC Berkeley</em></p>
+		
 		</p>
 	  </div><!--/hero-->
   	</div><!--/span-->

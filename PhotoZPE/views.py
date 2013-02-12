@@ -9,16 +9,11 @@ from my_code import get_SEDs as gs #my library written to predict SEDs
 
 '''
 TO DO:
- - include link to simbad for each source
  - include chosen stellar type in image
  - put sources on image of sky intead of list
  - put in image stuff requested by josh
- - update info page (api, description of zp)
- - for both modes 2&3, have page return all requested
-    sources, with phot only filled in for those that are matched.
- - if given a query_ID, have result page display results for that query
+ - update info page (api (note that you can explore past calculations with sid), description of zp)
  - have nice error pages
- - update upload page to have overlay instead of append (OR JUST REPLACE HERO DIV!!)
  - set browse/upload button to my own design
 '''
 
@@ -47,7 +42,6 @@ max_disp = 300
 
 #######################################################################
 @app.route('/upload', methods=['GET', 'POST'])
-@app.route('/', methods=['GET', 'POST'])
 def show_upload():
     '''
     Uses upload.html (and base.html).
@@ -116,7 +110,7 @@ def show_upload():
 ## show_upload() helper functions
 def create_collection():
     # create a new collection in the database, using the unix time and a random integer
-    #  to ensure a datable (yet unique) collection.  Remove these with cronjob!
+    #  to ensure a datable (yet unique) collection.  Remove these with cronjob!'
     sid = str(time()).split('.')[0]+'_'+str(np.random.randint(9999))
     session['sid'] = sid #I use the flask.sessions interface to keep track of data across requests
     return DB[sid]
@@ -127,15 +121,34 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    # homepage simply points to upload
+    return redirect(url_for('show_upload'))
+
+
 #######################################################################
 @app.route('/results', methods=['GET'])
 def show_results():
     '''
     The main results page, uses results.html (and base.html).
     '''
-    coll = DB[ session['sid'] ]
-    # case out the three different modes
-    mode = coll.find_one( {"entry":"mode"} )['mode']
+    # two-tiered try-except clause to figure out whether the user submitted
+    #  their own SID and then whether the known SID has a database entry tied to it
+    try:
+        # see whether a session ID was passed as an argument
+        sid = request.args.get('sid')
+        coll = DB[ sid ]
+    except:
+        try:
+            coll = DB[ session['sid'] ]
+        except:
+            return redirect(url_for('show_upload'))
+    try:
+        # if database entry not found, shunt them back to upload
+        mode = coll.find_one( {"entry":"mode"} )['mode']
+    except:
+        return redirect(url_for('show_upload'))
     
     # first, test to see whether we've already built a database, and simply display it
     if coll['data'].find_one() != None:
@@ -180,12 +193,12 @@ def show_results():
         matches = gs.identify_matches( requested_coords, cat.coords)
         out_coords, out_model_indices = [],[]
         i = 0
-        for match in matches:
+        for j,match in enumerate(matches):
             if match != None:
                 coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
-                                        "mode":cat.modes[match], "coords":cat.coords[match].tolist(), "models":int(cat.models[match])} )
+                                        "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
                 out_model_indices.append( cat.models[match] )
-                out_coords.append( cat.coords[match] )
+                out_coords.append( requested_coords[j] )
                 i +=1
         return render_template( "results12.html", spec_ids=map(int, out_model_indices[:max_disp]), coords=out_coords[:max_disp] )
     
@@ -204,9 +217,7 @@ def show_results():
         cat = gs.catalog( center, max(size) )
         
         # pull out only the band we care about
-        print cat.SEDs[0]
         mod_mags = np.array([ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ])
-        print mod_mags[0]
         
         # calculate zeropoint
         median_zp, mad_zp, matches, all_zps = gs.calc_zeropoint( requested_coords, cat.coords, inst_mags, mod_mags, return_zps=True)
@@ -219,9 +230,9 @@ def show_results():
         for j,match in enumerate(matches):
             if match != None:
                 coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
-                                        "mode":cat.modes[match], "coords":cat.coords[match].tolist(), "models":int(cat.models[match])} )
+                                        "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
                 out_model_indices.append( cat.models[match] )
-                out_coords.append( cat.coords[match] )
+                out_coords.append( requested_coords[j] )
                 i +=1
         
         return render_template( "results3.html", spec_ids=map(int, out_model_indices[:max_disp]), coords=out_coords[:max_disp],\
@@ -451,31 +462,87 @@ def api_handler():
             cat = gs.catalog( center, max(size) )
             # match requested coords to returned sources
             matches = gs.identify_matches( requested_coords, cat.coords)
-            out_coords, out_model_indices = [],[]
             json_list = [ {'query_ID':session['sid']} ]
             i = 0
-            for match in matches:
+            for j,match in enumerate(matches):
                 if match != None:
                     coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
-                                            "mode":cat.modes[match], "coords":cat.coords[match].tolist(), "models":int(cat.models[match])} )
-                    out_model_indices.append( cat.models[match] )
-                    out_coords.append( cat.coords[match] )
-                    json_list.append({ 'ra':cat.coords[match][0], 'dec':cat.coords[match][1], 'mode':cat.modes[match], 'phot':cat.SEDs[match].tolist(),\
-                                       'errors':cat.full_errors[match].tolist() })
+                                            "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
+                    json_list.append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
+                                       'phot':cat.SEDs[match].tolist(), 'errors':cat.full_errors[match].tolist() })
                     i +=1
             # return the catalog in either ascii or JSON
             if response_type == 'json':
                 return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
             elif response_type == 'ascii':
-                ascii_out = build_ascii( json_list[1:], "Query ID: {}".format(json_list[0]['query_id']) )
+                ascii_out = build_ascii( json_list[1:], "Query ID: {}".format(json_list[0]['query_ID']) )
                 response = Response(ascii_out, mimetype='text/plain')
                 response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
                 return response
+        
+        elif mode == 3:
+            # produce matched catalog and zeropoint estimate
+            source_file = request.files["source_file"]
+            if source_file and allowed_file(source_file.filename):
+                # try to parse with numpy
+                try:
+                    source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
+                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000]  #only accept first 1000 sources
+                except:
+                    return Response( '{ success:false, message:"Uploaded file incorrectly formatted."}',
+                                    mimetype='application/json')
+            else:
+                return Response( '{ success:false, message:"Uploaded file incorrectly formatted."}',
+                                mimetype='application/json')
+            # if all's good, create the collection and populate it
+            coll = create_collection()
+            coll.insert( {"entry":"mode", "mode":mode} )
+            coll.insert( {"entry":"passband", "passband":band} )
+            for row in data:
+                coll["requested_sources"].insert( {"ra":row[0], "dec":row[1], "inst_mag":row[2] })
+            
+            requested_coords = data[:,:2] #put ra,dec into numpy array for sake of functions below
+            inst_mags = data[:,2]
+            
+            center, size = gs.find_field( requested_coords )
+            cat = gs.catalog( center, max(size) )
+            
+            # pull out only the band we care about
+            mod_mags = np.array([ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ])
+            
+            # calculate zeropoint
+            median_zp, mad_zp, matches, all_zps = gs.calc_zeropoint( requested_coords, cat.coords, inst_mags, mod_mags, return_zps=True)
+            coll.insert( {"entry":"zeropoint_estimate", "zp":median_zp, "mad":mad_zp} )
+            for val in all_zps:
+                coll['zeropoints'].insert( {"zp":val} )
+            # put into database and into json or ascii format
+            json_list = [ {'query_ID':session['sid'], 'median_zeropoint':median_zp, 'MAD_zeropoint':mad_zp} ]
+            i = 0
+            for j,match in enumerate(matches):
+                if match != None:
+                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
+                                            "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
+                    json_list.append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
+                                       'phot':cat.SEDs[match].tolist(), 'errors':cat.full_errors[match].tolist() })
+                    i +=1
+            # return the catalog in either ascii or JSON
+            if response_type == 'json':
+                return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
+            elif response_type == 'ascii':
+                header = ["Query_ID: {}".format(json_list[0]['query_ID']), "Zeropoint: {}".format(round(json_list[0]['median_zeropoint'],2)),\
+                          "M.A.D: {}".format(round(json_list[0]['MAD_zeropoint'],2))]
+                ascii_out = build_ascii( json_list[1:], header )
+                response = Response(ascii_out, mimetype='text/plain')
+                response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
+                return response                    
 
 
 def build_ascii( json_list, header_str=None ):
     '''
     Helper function for API.
+    json_list: list of dictionaries to make into pretty ascii.
+    header_str: either single-line string or list of strings to insert into the
+      (commented-out) header of the ascii file.
     '''
     ascii_out = \
     "# Catalog produced by the Photometric Estimate Server\n"+\
@@ -484,7 +551,11 @@ def build_ascii( json_list, header_str=None ):
     "#\n#  Mode is the set of observations used to fit the model\n" +\
     "#   0=SDSS+2MASS, 1=USNOB+2MASS\n"
     if header_str != None:
-        ascii_out += '# '+header_str+'\n'
+        if type(header_str) == str:
+            ascii_out += '# '+header_str+'\n'
+        elif type(header_str) == list:
+            for hs in header_str:
+                ascii_out += '# '+hs+'\n'
     ascii_out += "# " + "{}       {}       ".format("RA","DEC") + (' '*6).join(ALL_FILTERS) + " "*6 +\
     '  '.join([val+"_err" for val in ALL_FILTERS]) + "  Mode\n"
     for obj in json_list:

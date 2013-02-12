@@ -24,6 +24,50 @@
 		-Isaac Shivvers <br>
 		 <i>ishivvers (at) astro (dot) berkeley (dot) edu</i>
 		</p>
+		
+		<div class="row-fluid">
+		  <div class="span2"></div>
+	      <div class="span8">
+		  {% if mode %}
+			<hr>
+			  <p>Verify that the first few data points below are properly loaded and click Continue.<br>
+				PLEASE DO NOT REFRESH THIS WINDOW - depending on the size of your request, 
+				the response may take up to a minute or two.</p>
+			  {% if mode>1 %}
+			  <table class="table table-condensed">
+			    <tr><td><b>RA</b></td>
+				<td><b>DEC</b></td>
+				{% if mode==3 %}
+				  <td><b>Inst. Mag</b></td>
+				{% endif %}
+				</tr>
+				{% for row in data %}
+				  <tr><td>{{ row[0] }}</td>
+				  <td>{{ row[1] }}</td>
+				  {% if mode==3 %}
+				    <td>{{ row[2] }}</td>
+				  {% endif %}
+				  </tr>
+				{% endfor %}
+		      </table>
+		      {% endif %}
+		      {% if mode==1 %}
+				<p>
+					<b>RA:</b> {{ data[0] }}&deg; <br>
+					<b>DEC:</b> {{ data[1] }}&deg; <br>
+					<b>Field Size:</b> {{ data[2] }}&quot; <br>
+				</p>
+		      {% endif %}
+			  <a href="{{ url_for('show_results') }}" class="btn btn-primary">Continue</a>
+		  {% endif %}
+
+	      {% if feedback %}
+		    <h3> {{ feedback }} </h3>
+		  {% endif %}
+		</div><!--/span-->
+	    <div class="span2"></div>
+	  </div><!--/row-->
+	
 	    </div><!--/hero-->
   	  </div><!--/span-->
 	</div><!--/row-->
@@ -46,7 +90,12 @@
 				as the first two columns.  Note this is designed for stars grouped together in a
 				field and is capped at 1000 sources.</p>
 			<form action="upload" method="POST" enctype="multipart/form-data">
-		    <input type="file" id="upload_file" name="source_file"/>
+			<div class="fileupload fileupload-new" data-provides="fileupload">
+			  <span class="btn btn-file"><span class="fileupload-new">Select file</span>
+			  <span class="fileupload-exists">Change</span><input type="file" id="upload_file" name="source_file"/></span>
+			  <span class="fileupload-preview"></span>
+			  <a href="#" class="close fileupload-exists" data-dismiss="fileupload" style="float: none">×</a>
+			</div>
 			<input type="hidden" name="mode" value="2">
 			<input type="submit" class="btn btn-primary btn-small" value="Submit"/>
 			</form>
@@ -58,7 +107,12 @@
 				observed passband from the drop-down menu.
 				Note this is designed for stars grouped together in a field and is capped at 1000 sources.</p>
 			<form action="upload" method="POST" enctype="multipart/form-data">
-		    <input type="file" id="upload_file" name="source_file"/>
+	    	  <div class="fileupload fileupload-new" data-provides="fileupload">
+			    <span class="btn btn-file"><span class="fileupload-new">Select file</span>
+			    <span class="fileupload-exists">Change</span><input type="file" id="upload_file" name="source_file"/></span>
+			    <span class="fileupload-preview"></span>
+			    <a href="#" class="close fileupload-exists" data-dismiss="fileupload" style="float: none">×</a>
+			  </div>
 			<input type="hidden" name="mode" value="3">
 			<select class="input-mini" name="band">
 			  <option value="u">u</option>
@@ -77,46 +131,7 @@
 			</form>
 		</div><!--/span-->
 	</div> <!--/row-->
-	<div class="row-fluid">
-      <div class="span6">
-	  {% if mode %}
-		<hr>
-		  <p>Verify that data below are properly loaded and click Continue.<br>
-			PLEASE DO NOT CLOSE THIS WINDOW - depending on the size of your request, 
-			the response may take up to a minute or two.</p>
-		  {% if mode>1 %}
-		  <table class="table table-condensed">
-		    <tr><td><b>RA</b></td>
-			<td><b>DEC</b></td>
-			{% if mode==3 %}
-			  <td><b>Inst. Mag</b></td>
-			{% endif %}
-			</tr>
-			{% for row in data %}
-			  <tr><td>{{ row[0] }}</td>
-			  <td>{{ row[1] }}</td>
-			  {% if mode==3 %}
-			    <td>{{ row[2] }}</td>
-			  {% endif %}
-			  </tr>
-			{% endfor %}
-	      </table>
-	      {% endif %}
-	      {% if mode==1 %}
-			<p>
-				<b>RA:</b> {{ data[0] }}&deg; <br>
-				<b>DEC:</b> {{ data[1] }}&deg; <br>
-				<b>Field Size:</b> {{ data[2] }}&quot; <br>
-			</p>
-	      {% endif %}
-		  <a href="{{ url_for('show_results') }}" class="btn btn-primary">Continue</a>
-	  {% endif %}
-	
-      {% if feedback %}
-	    <h3> {{ feedback }} </h3>
-	  {% endif %}
-	  </div><!--/span-->
-  </div><!--/row-->
+  <!-- tables did go here -->
 </div><!--/container-->
 
 {% endblock %}

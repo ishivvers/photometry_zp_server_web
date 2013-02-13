@@ -1,5 +1,5 @@
 ########################################################################
-from flask import redirect, request, session, url_for, render_template, Response # helper functions
+from flask import redirect, request, session, url_for, render_template, Response, send_from_directory # helper functions
 from PhotoZPE import app #the flask object itself, created by __init__.py
 import numpy as np
 from time import time, strftime
@@ -9,12 +9,8 @@ from my_code import get_SEDs as gs #my library written to predict SEDs
 
 '''
 TO DO:
- - include chosen stellar type in image
  - put sources on image of sky intead of list
- - put in image stuff requested by josh
- - update info page (api (note that you can explore past calculations with sid), description of zp)
  - have nice error pages
- - set browse/upload button to my own design
 '''
 
 ########################################################################
@@ -24,7 +20,7 @@ FILTER_PARAMS =  gs.FILTER_PARAMS
 ALL_FILTERS = np.array(gs.ALL_FILTERS)
 
 try:
-    MODELS = np.load( app.config['SPECTRA_FOLDER']+'all_models_P.npy', 'r' )
+    MODELS = np.load( app.root_path+'/static/spectra/all_models_P.npy' )
 except:
     raise IOError('cannot find models file')
 # convert the MODELS np array into a dictionary of arrays, so we can call by index (faster)
@@ -34,7 +30,9 @@ for model in MODELS[1:]:
 del(MODELS) #just to free memory
 
 try:
-    SPEC_TYPES = np.loadtxt( app.config['SPECTRA_FOLDER']+'pickles_types.txt' )
+    SPEC_TYPES = np.loadtxt( app.root_path+'/static/spectra/pickles_types.txt', dtype=str )
+except:
+    raise IOError('cannot find spectral types file')
     
 
 # initialize the database
@@ -132,6 +130,12 @@ def allowed_file(filename):
 def home():
     # homepage simply points to upload
     return redirect(url_for('show_upload'))
+
+
+@app.route('/favicon.ico')
+def favicon():
+    # quick redirect to show favicon
+    return send_from_directory(app.root_path+'/static/img','favicon.ico')
 
 
 #######################################################################
@@ -295,7 +299,7 @@ def serve_spectrum():
 def serve_sed_flams():
     '''
     Loads magnitudes (obs and modeled) from database created by upload, returns FLAM.
-    Needs database index (given as url?index=value).
+    Needs database index (given as url?index=value&spec=value).
     '''
     sed_index = int(request.args.get('index',''))
     coll = DB[ session['sid'] ]
@@ -319,10 +323,14 @@ def serve_sed_flams():
 @app.route('/servemags', methods=['GET'])
 def serve_sed_mags():
     '''
-    Loads magnitudes (obs and modeled) from database created by results page, returns FLAM.
-    Needs database key (given as url?key=value).
+    Loads magnitudes (obs and modeled) from database created by results page, returns FLAM
+     and the spectral type of the fit.
+    Needs database index and spectrum id (given as url?index=value&spec=value).
     '''
-    sed_index = int(request.args.get('index',''))    
+    sed_index = int(request.args.get('index',''))   
+    spec_index = int(request.args.get('spec',''))
+    spec_type = SPEC_TYPES[spec_index]
+    
     coll = DB[ session['sid'] ]
     curs = coll['data'].find_one( {"index":sed_index} )
     sed_mags = curs["sed"]
@@ -338,6 +346,7 @@ def serve_sed_mags():
     # push everything into json-able format
     json_list = [{'x': FILTER_PARAMS[ALL_FILTERS[i]][0], 'y': sed_mags[i], 'err': sed_errs[i], \
                  'modeled': modeled[i], 'name': ALL_FILTERS[i]} for i in range(len(sed_mags))]
+    json_list += [{'name':'spec_type', 'value':spec_type}]
     return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
 
 

@@ -129,7 +129,7 @@ function draw_spectrum( spec_id, sed_index ) {
        // draw the image
        draw();
        // and update the text
-       update_text(sed_index);
+       update_text(sed_index, spec_id);
 	});
 };
 
@@ -160,7 +160,8 @@ function draw_scatterplot( sed_index ) {
 			  .delay(100)
 	          .duration(200)
 			  .attr("r", 12);
-		
+
+		// use the loading class for any text that gets updated each time
 		for ( var i=0; i<data.length; i++) {
 			svg.append("text")
 				.attr("class", "loading")
@@ -182,7 +183,7 @@ function draw() {
 }
 
 // function to change the body text, displaying feedback for selected source
-function update_text(sed_index) {
+function update_text(sed_index, spec_id) {
 	// first set the selected source as active
 	//  remove active class from previous selection, and apply it to new selection
 	var all_active_elements = document.getElementsByClassName("active");
@@ -194,20 +195,30 @@ function update_text(sed_index) {
 	var list_element = document.getElementById("source_"+String(sed_index));
 	list_element.className = "active";
 	
-	// then update the magnitudes table
+	// then update the magnitudes table and the stellar type label
 	var xmlhttp=new XMLHttpRequest();
 	xmlhttp.onreadystatechange=function() {
 	  if (xmlhttp.readyState==4 && xmlhttp.status==200) {
 			eval("var reply="+xmlhttp.responseText);
 			for (var i=0; i<reply.length; i++) {
-				var cells = document.getElementById("tr_"+reply[i].name).childNodes;
-				cells[2].childNodes[0].replaceData( 0, 10, reply[i].y.toFixed(2));
-				cells[3].childNodes[0].replaceData( 0, 10, reply[i].err.toFixed(3));
-				cells[4].childNodes[0].replaceData( 0, 10, reply[i].modeled);
+				if (reply[i].name=='spec_type') {
+					console.log(reply[i].value);
+					svg.append("text")
+					    .attr("class", "loading")
+					    .text(reply[i].value)
+					    .attr("x", function () { return width-50; })
+					    .attr("y", 10 );
+				}
+				else {
+					var cells = document.getElementById("tr_"+reply[i].name).childNodes;
+					cells[2].childNodes[0].replaceData( 0, 10, reply[i].y.toFixed(2));
+					cells[3].childNodes[0].replaceData( 0, 10, reply[i].err.toFixed(3));
+					cells[4].childNodes[0].replaceData( 0, 10, reply[i].modeled);
+				}
 	        };
 	  };
 	};
-	xmlhttp.open("GET","{{ url_for('serve_sed_mags') }}?index="+String(sed_index),true);
+	xmlhttp.open("GET","{{ url_for('serve_sed_mags') }}?index="+String(sed_index)+"&spec="+String(spec_id),true);
 	xmlhttp.send();
 };
 

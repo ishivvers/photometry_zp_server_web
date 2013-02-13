@@ -26,13 +26,13 @@
 		</p>
 		
 		<div class="row-fluid">
-		  <div class="span2"></div>
-	      <div class="span8">
+	      <div class="span8 offset2">
 		  {% if mode %}
 			<hr>
 			  <p>Verify that the first few data points below are properly loaded and click Continue.<br>
 				PLEASE DO NOT REFRESH THIS WINDOW - depending on the size of your request, 
-				the response may take up to a minute or two.</p>
+				the response may take up to a minute or two.  If this page times out, click your
+				browser's back button, then follow the link to the Results page to inspect the result.</p>
 			  {% if mode>1 %}
 			  <table class="table table-condensed">
 			    <tr><td><b>RA</b></td>
@@ -65,7 +65,6 @@
 		    <h3> {{ feedback }} </h3>
 		  {% endif %}
 		</div><!--/span-->
-	    <div class="span2"></div>
 	  </div><!--/row-->
 	
 	    </div><!--/hero-->
@@ -81,7 +80,7 @@
 			  <input type="text" name="DEC" class="input-small" placeholder="DEC (&deg;)">
 			  <input type="text" name="FS" class="input-small" placeholder="Field Size (&quot;)">
 			  <input type="hidden" name="mode" value="1">
-			  <input type="submit" class="btn btn-primary btn-small" value="Submit"/>
+			  <br><input type="submit" class="btn btn-primary" value="Submit"/>
 			</form>
 		</div><!--/span-->
 		<div class="span4">
@@ -97,7 +96,7 @@
 			  <a href="#" class="close fileupload-exists" data-dismiss="fileupload" style="float: none">×</a>
 			</div>
 			<input type="hidden" name="mode" value="2">
-			<input type="submit" class="btn btn-primary btn-small" value="Submit"/>
+			<input type="submit" class="btn btn-primary" value="Submit"/>
 			</form>
 		</div><!--/span-->
 		<div class="span4">
@@ -127,7 +126,7 @@
 			  <option value="H">H</option>
 			  <option value="K">K</option>
 			</select>
-			<input type="submit" class="btn btn-primary btn-small" value="Submit"/>
+			<br><input type="submit" class="btn btn-primary" value="Submit"/>
 			</form>
 		</div><!--/span-->
 	</div> <!--/row-->

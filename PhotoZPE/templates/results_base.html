@@ -202,7 +202,6 @@ function update_text(sed_index, spec_id) {
 			eval("var reply="+xmlhttp.responseText);
 			for (var i=0; i<reply.length; i++) {
 				if (reply[i].name=='spec_type') {
-					console.log(reply[i].value);
 					svg.append("text")
 					    .attr("class", "loading")
 					    .text(reply[i].value)

@@ -15,14 +15,15 @@
  	      <a target="_blank" href="http://www.ipac.caltech.edu/2mass/overview/about2mass.html">2-MASS</a>.
 		  To do this, I pull observations from the SDSS catalog 
 		  (if within <a target="_blank" href="http://www.sdss.org/dr7/coverage/">the SDSS footprint</a>)
-		  or from the all-sky USNO-B1 catalog, cross-match them to sources in the all-sky 2-MASS catalog,
-		  and then fit a model spectra from the 
+		  or from the all-sky USNO-B1 catalog, cross-match to sources in the all-sky 2-MASS catalog,
+		  and fit a model spectra from the 
 		  <a target="_blank" href="http://www.stsci.edu/hst/observatory/cdbs/pickles_atlas.html">Pickles Stellar Atlas</a>
 		  to each source. This produces an estimate for the spectrum for each individual source,
-		  from which I then produce synthetic photometry for all requested bands. These photometric estimates
-		  can then be used to calculate a systematic offset between observed magnitudes (e.g. the instrumental
+		  from which I obtain synthetic photometry for all requested bands. These photometric estimates
+		  can safely be used to calculate a systematic offset between observed magnitudes (e.g. the instrumental
 		  magnitudes generated through photometry on images) and the true magnitudes for a set of observations;
-		  i.e. the photometric zeropoint.
+		  i.e. the photometric zeropoint.  Note: <i>u, g, r, i, z</i> &amp; <i>y</i> photometry are reported as AB magnitudes,
+		  while <i>J, H, K, B</i> &amp; <i>V</i> are Vega magnitudes.
 	   </p>
 
 	  <hr>	
@@ -38,22 +39,19 @@
 		  characteristic errors of individual sources are of order <b>.10 mag</b>, and
 		  errors of the mean offset for all sources in field are of order <b>.04 mag</b>.
 		  <div class="row-fluid">
-			<div class="span1"></div>
-			<div class="span10 pagination-centered">
+			<div class="span10 offset1 pagination-centered">
 			  <img src="static/img/sdss_errs.png" width=550 height=550 alt="SDSS error histogram">
 			  <p small>Histograms of the differences between predicted and true values for SDSS
 				<i>z</i> magnitudes for sources in 5 arbitrary SDSS fields, as estimated by the other
 				SDSS observations and 2-MASS.  Each histogram displays sources within a .5&deg; box
 				around the listed RA and DEC.</p>
 			</div><!--/span-->
-			<div class="span1"></div>
 		  </div><!--/row-->
 		<br>
 		  When using USNO-B1 (e.g. to predict SDSS magnitudes outside the SDSS footprint),
 		  characteristic errors are different for each band:
 		<div class="row-fluid">
-			<div class="span3"></div>
-			<div class="span6">
+			<div class="span6 offset3">
 		  <table class="table table-condensed">
 			<tr><td><b>Band</b></td>
 				<td><b>Individual Errors (mag)</b></td>
@@ -75,11 +73,9 @@
 				<td>.24</td></tr>
 	      </table>
 	     </div><!--/span-->
-		 <div class="span3"></div>
 		</div><!--/row-->
 		  <div class="row-fluid">
-			<div class="span1"></div>
-			<div class="span10 pagination-centered">
+			<div class="span10 offset1 pagination-centered">
 			  <img src="static/img/usnob_errs_z.png" width=400 height=400 alt="USNO-B1 error histogram">
 			  <img src="static/img/usnob_errs_g.png" width=400 height=400 alt="USNO-B1 error histogram">
 			  <p>Histograms of the differences between predicted and true values for SDSS
@@ -87,7 +83,6 @@
 				the USNO-B1 and	2-MASS observations.  Each histogram displays sources within a .5&deg; box
 				around the listed RA and DEC.</p>
 			</div><!--/span-->
-			<div class="span1"></div>
 		  </div><!--/row-->
 
 		<hr>
@@ -102,8 +97,7 @@
 		  magnitudes if using mode 3.
 		</p>
 		<div class="row-fluid">
-		<div class="span1"></div>
-		  <div class="span10">
+		  <div class="span10 offset1">
 			 <h3>1</h3>
 			 <i>Produce a catalog of a specific field.</i><br>
 			  <strong>Required:</strong>
@@ -117,15 +111,13 @@
 		  <ul>
 			<li><b>response:</b> ascii (default) or json</li>
 		  </ul>
-		  <strong>Example:</strong>
-			<pre>curl 'http://127.0.0.1:5000/api?mode=1&amp;ra=200.&amp;dec=20.&amp;size=450.&amp;type=ascii'</pre>
+		  <strong>Example:</strong><br>
+			<code>curl 'http://127.0.0.1:5000/api?mode=1&amp;ra=200.&amp;dec=20.&amp;size=450.&amp;type=ascii'</code>
 		  </div><!--/span-->
-		<div class="span1"></div>
 		</div><!--/row-->
 		
 		<div class="row-fluid">
-		<div class="span1"></div>
-		  <div class="span10">
+		  <div class="span10 offset1">
 			<h3>2</h3>
 			<i>Produce a catalog for a set of stars.</i><br>
 			  <strong>Required:</strong>
@@ -137,15 +129,13 @@
 			  <ul>
 				<li><b>response:</b> ascii (default) or json</li>
 			  </ul>
-			  <strong>Example:</strong>
-				<pre>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=2&amp;type=ascii'</pre>
+			  <strong>Example:</strong><br>
+				<code>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=2&amp;type=ascii'</code>
 		  </div> <!--/span-->
-		<div class="span1"></div>
 		</div><!--/row-->
 		
 		<div class="row-fluid">
-		<div class="span1"></div>
-		  <div class="span10">
+		  <div class="span10 offset1">
 			<h3>3</h3>
 			<i>Produce a catalog and a photometric zeropoint for a set of observations.</i><br>
 			  <strong>Required:</strong>
@@ -158,22 +148,22 @@
 			  <ul>
 				<li><b>response:</b> ascii (default) or json</li>
 			  </ul>
-			  <strong>Example:</strong>
-				<pre>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=3&amp;band=y&amp;type=ascii'</pre>
+			  <strong>Example:</strong><br>
+				<code>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=3&amp;band=y&amp;type=ascii'</code>
 		  </div> <!--/span-->
-		<div class="span1"></div>
 		</div><!--/row-->
 		<div class="row-fluid">
 			<h3>Examining API results:</h3>
-			<p>Each API response includes a string of numbers called the "Query ID", which looks something like "1360698575_1157" -
-				this allows you to examine the results of any API call through the full web interface.
+			<p>Each API response includes a string of numbers called the "Query ID", which looks something like
+				 "1360698575_1157" - this allows you to examine the results of any API call through the full web interface.
 				To inspect the catalog, pass your Query ID as a
-			   URL query string to the Results page with the keyword 'sid'.
+			   URL query string to the Results page with the keyword 'sid'.  Note: only works for queries made within 
+			   the last day or so.
 			</p>
-			<strong>Example:</strong>
-			  <pre>http://127.0.0.1:5000/results?sid=YOUR_QUERY_ID</pre>
+			<strong>Example:</strong><br>
+			  <code>http://127.0.0.1:5000/results?sid=YOUR_QUERY_ID</code>
 		</div><!--/row-->
-		
+		<div class="row-fluid">
 		<hr>
 		<h3>Open-Source Development</h3>
 		<p>
@@ -191,9 +181,10 @@
 		  If you would like a copy of the codebase, if you have any questions about it or the website, or if you
 		  have any comments or suggestions, simply shoot me an email - I'd like to hear from you! <br>
 		  <i>ishivvers (at) astro (dot) berkeley (dot) edu</i>
-		
+		</p>
 		<hr>
 		<h3>Affiliations</h3>
+		<div class="span8 offset2 pagination-centered">
 		<a target="_blank" href="http://astro.berkeley.edu/">
 		<img src="static/img/berkeley_seal_T.gif" width=150 height=150 alt="UC Berkeley"></a>
 		<a target="_blank" href="http://cftd.info/">
@@ -201,8 +192,8 @@
 		<a target="_blank" href="http://www.nsf.gov/">
 		<img src="static/img/nsf_logo.gif" width=160 height=160 alt="NSF"></a>
 		<p><br><em>Codebase and site developed by <a target="_blank" href="http://astro.berkeley.edu/~ishivvers/">Isaac Shivvers</a>, UC Berkeley</em></p>
-		
-		</p>
+		</div><!--/span-->
+		</div><!--/row-->
 	  </div><!--/hero-->
   	</div><!--/span-->
   </div><!--/row-->

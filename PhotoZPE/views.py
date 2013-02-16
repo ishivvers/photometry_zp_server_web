@@ -74,8 +74,8 @@ def show_upload():
                     source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
                     data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000] #only accept first 1000 sources
                 except:
-                    return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                    "is a properly-formatted .txt file.")
+                   return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
+                                                   "is a properly-formatted .txt file.")
             else:
                 return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
                                                 "is a properly-formatted .txt file.")
@@ -99,13 +99,15 @@ def show_upload():
                 return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
                                                 "is a properly-formatted .txt file.")
             # if all's good, create the collection and populate it
+            band = request.form["band"]
             coll = create_collection()
             coll.insert( {"entry":"mode", "mode":mode} )
-            coll.insert( {"entry":"passband", "passband":request.form["band"]} )
+            coll.insert( {"entry":"passband", "passband":band} )
             for row in data:
                 coll["requested_sources"].insert( {"ra":row[0], "dec":row[1], "inst_mag":row[2] })
-            
-        return render_template( "upload.html", mode=mode, data=data[:5] )
+        if mode == 1 or mode == 2:
+            band = None
+        return render_template( "upload.html", mode=mode, data=data[:5], band=band )
 
 
 ## show_upload() helper functions

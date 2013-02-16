@@ -11,7 +11,7 @@
 	<p> This site uses a set of catalogs, together covering the entire sky,
 		along with synthetic photometry of standard spectra
 		to produce estimated photometry in missing bands, returning
-		observations or estimates for <i>u, g, r, i, z, y, B, R, J, H</i> &amp; <i>K</i> passbands.<br>
+		observations or estimates for <i>u, g, r, i, z, y, B, V, R, I, J, H</i> &amp; <i>K</i> passbands.<br>
 		Please read the <a href="{{ url_for('show_info') }}">info page</a> for
 		a complete description, a discussion of errors,	and a few examples. <br>
 		<strong>There are three modes:</strong>
@@ -38,7 +38,7 @@
 			    <tr><td><b>RA</b></td>
 				<td><b>DEC</b></td>
 				{% if mode==3 %}
-				  <td><b>Inst. Mag</b></td>
+				  <td><b>{{band}} Mag</b></td>
 				{% endif %}
 				</tr>
 				{% for row in data %}
@@ -121,7 +121,9 @@
 			  <option value="z">z</option>
 			  <option value="y">y</option>
 		  	  <option value="B">B</option>
+		  	  <option value="V">V</option>
 			  <option value="R">R</option>
+			  <option value="I">I</option>
 			  <option value="J">J</option>
 			  <option value="H">H</option>
 			  <option value="K">K</option>

@@ -29,62 +29,92 @@
 	  <hr>	
 	  <h3>Characteristic Errors</h3>
 	   <p>Though the estimates for individual sources can, at worst, be off by as much
-		  as .5 mag, I have worked to get the mean offset for any ensemble of
+		  as .5 mag, I have worked to get the median offset for any ensemble of
 		  sources as close to zero as possible. This works much better for central bands
 		  (<i>i, z, y</i>) than the bluer bands. Within our group, we use this system to
-		  estimate <i>y</i>-band zeropoints, which has characteristic errors very similar to those
-		  of <i>z</i> listed below - please be aware of the errors and limitations if you
-		  use this for blue bands out of the SDSS footprint!<br>
-		  When using SDSS (e.g. to predict y-band within the SDSS footprint), 
-		  characteristic errors of individual sources are of order <b>.10 mag</b>, and
-		  errors of the mean offset for all sources in field are of order <b>.04 mag</b>.
+		  estimate <i>y</i>-band zeropoints - please be aware of the errors and limitations if you
+		  use this for blue bands as well!<br>
+		
+		
+		  <strong>Inside the SDSS footprint (mode 0).</strong> The errors below are compiled
+		  from a set of 5 randomly-chosen fields of 0.5&deg; each, modeled using SDSS and 2-MASS
+		  observations.  When compared to <a target="_blank" href="http://www.ukidss.org/">UKIDSS</a>
+		  photometry, the <i>y</i> band estimates display a characteristic median offset of <b>0.02</b> mags,
+		  with a median absolute deviation of <b>0.07</b> mags.  When compared to 
+		  <a target="_blank" href="http://www.aavso.org/apass">APASS</a> photometry, the <i>V</i> and <i>B</i>
+		  bands both display characteristic median offsets of <b>0.03</b>, with median absolute
+		  deviations of <b>0.08</b> and <b>0.13</b> respectively (though <i>I</i> and <i>R</i> were not
+		  examined, their errors should be quite similar).
 		  <div class="row-fluid">
 			<div class="span10 offset1 pagination-centered">
-			  <img src="static/img/sdss_errs.png" width=550 height=550 alt="SDSS error histogram">
-			  <p small>Histograms of the differences between predicted and true values for SDSS
-				<i>z</i> magnitudes for sources in 5 arbitrary SDSS fields, as estimated by the other
-				SDSS observations and 2-MASS.  Each histogram displays sources within a .5&deg; box
+			  <img src="static/img/ukidss_errs_y_sdss.png" width=400 height=400 alt="y error histogram">
+			  <img src="static/img/apass_errs_V_sdss.png" width=400 height=400 alt="V error histogram">
+			  <p small>Histograms of the differences between modeled and observed <i>y</i> and <i>V</i> 
+				magnitudes for sources in 5 arbitrary fields, as estimated with
+				SDSS observations and 2-MASS.  Each histogram displays sources within a 0.5&deg; box
 				around the listed RA and DEC.</p>
 			</div><!--/span-->
 		  </div><!--/row-->
 		<br>
-		  When using USNO-B1 (e.g. to predict SDSS magnitudes outside the SDSS footprint),
-		  characteristic errors are different for each band:
+		  <strong>Outside the SDSS footprint (mode 1).</strong><br>  The errors below are compiled
+		  from a set of 5 randomly-chosen fields of 0.5&deg; each, modeled using USNO-B1 and 2-MASS observations.
+		  The <i>y</i> band comes from comparisons between modeled photometry and
+		  UKIDSS, the <i>V</i> band comes from comparisons with APASS,
+		  and the other bands come from comparisons between modeled photometry and SDSS. Though no
+		  direct comparison was made for <i>I</i> band, the characteristic errors are probably
+		  similar or better than those for <i>V</i>.
 		<div class="row-fluid">
 			<div class="span6 offset3">
+				<br>
 		  <table class="table table-condensed">
 			<tr><td><b>Band</b></td>
-				<td><b>Individual Errors (mag)</b></td>
-				<td><b>Error of the Mean (mag)</b></td></tr>
+				<td><b>Median Absolute Deviation (mag)</b></td>
+				<td><b>Offset of the Median (mag)</b></td></tr>
+			<tr><td>y</td>
+				<td>0.11</td>
+				<td>0.02</td></tr>
 			<tr><td>z</td>
-				<td>.10</td>
-				<td>.04</td></tr>
+				<td>0.10</td>
+				<td>0.05</td></tr>
 			<tr><td>i</td>
-				<td>.16</td>
-				<td>.08</td></tr>
+				<td>0.09</td>
+				<td>0.03</td></tr>
 			<tr><td>r</td>
-				<td>.17</td>
-				<td>.10</td></tr>
+				<td>0.09</td>
+				<td>0.04</td></tr>
 			<tr><td>g</td>
-				<td>.23</td>
-				<td>.14</td></tr>
+				<td>0.13</td>
+				<td>0.05</td></tr>
 			<tr><td>u</td>
-				<td>.41</td>
-				<td>.24</td></tr>
+				<td>0.25</td>
+				<td>0.04</td></tr>
+			<tr><td>V</td>
+				<td>0.19</td>
+				<td>0.08</td></tr>
 	      </table>
 	     </div><!--/span-->
 		</div><!--/row-->
 		  <div class="row-fluid">
 			<div class="span10 offset1 pagination-centered">
-			  <img src="static/img/usnob_errs_z.png" width=400 height=400 alt="USNO-B1 error histogram">
-			  <img src="static/img/usnob_errs_g.png" width=400 height=400 alt="USNO-B1 error histogram">
-			  <p>Histograms of the differences between predicted and true values for SDSS
-				<i>z</i> and <i>g</i> magnitudes for sources in 5 arbitrary SDSS fields, as estimated by
-				the USNO-B1 and	2-MASS observations.  Each histogram displays sources within a .5&deg; box
+			  <img src="static/img/ukidss_errs_y_nosdss.png" width=400 height=400 alt="y error histogram">
+			  <img src="static/img/sdss_errs_z.png" width=400 height=400 alt="r error histogram">
+			  <p>Histograms of the differences between predicted and true values for <i>y</i> and
+				<i>z</i> magnitudes for sources in 5 arbitrary fields, as estimated by
+				the USNO-B1 and	2-MASS observations.  Each histogram displays sources within a 0.5&deg; box
 				around the listed RA and DEC.</p>
 			</div><!--/span-->
 		  </div><!--/row-->
+		  <div class="row-fluid">
+			<div class="span10 offset1 pagination-centered">
+			  <img src="static/img/sdss_errs_r.png" width=400 height=400 alt="r error histogram">
+			  <img src="static/img/apass_errs_V_nosdss.png" width=400 height=400 alt="V error histogram">
+			  <p>Same as above, but for <i>r</i> and <i>V</i> bands.</p>
+			</div><!--/span-->
+		  </div><!--/row-->
 
+
+		<!-- Insert discussion of built-in errors with SDSS/USNOB1/APASS -->
+		
 		<hr>
 		<h3>API</h3>
 		<p>
@@ -112,7 +142,7 @@
 			<li><b>response:</b> ascii (default) or json</li>
 		  </ul>
 		  <strong>Example:</strong><br>
-			<code>curl 'http://127.0.0.1:5000/api?mode=1&amp;ra=200.&amp;dec=20.&amp;size=450.&amp;type=ascii'</code>
+			<code>curl 'http://127.0.0.1:5000/api?mode=1&amp;ra=200.&amp;dec=20.&amp;size=450.&amp;response=ascii'</code>
 		  </div><!--/span-->
 		</div><!--/row-->
 		
@@ -130,7 +160,7 @@
 				<li><b>response:</b> ascii (default) or json</li>
 			  </ul>
 			  <strong>Example:</strong><br>
-				<code>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=2&amp;type=ascii'</code>
+				<code>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=2&amp;response=ascii'</code>
 		  </div> <!--/span-->
 		</div><!--/row-->
 		
@@ -149,7 +179,7 @@
 				<li><b>response:</b> ascii (default) or json</li>
 			  </ul>
 			  <strong>Example:</strong><br>
-				<code>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=3&amp;band=y&amp;type=ascii'</code>
+				<code>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=3&amp;band=y&amp;response=ascii'</code>
 		  </div> <!--/span-->
 		</div><!--/row-->
 		<div class="row-fluid">

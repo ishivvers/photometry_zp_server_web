@@ -20,7 +20,7 @@ FILTER_PARAMS =  gs.FILTER_PARAMS
 ALL_FILTERS = np.array(gs.ALL_FILTERS)
 
 try:
-    MODELS = np.load( app.root_path+'/static/spectra/all_models_P.npy' )
+    MODELS = np.load( app.root_path+'/static/spectra/all_models.npy' )
 except:
     raise IOError('cannot find models file')
 # convert the MODELS np array into a dictionary of arrays, so we can call by index (faster)
@@ -308,10 +308,10 @@ def serve_sed_flams():
     mode = curs["mode"]
     if mode == 1:
         #USNOB+2MASS
-        modeled = ['y']*6 + ['n']*5
+        modeled = ['m']*6 + ['o','m']*2 + ['o']*3
     else:
         #SDSS+2MASS
-        modeled = ['n']*5 + ['y']*3 + ['n']*3
+        modeled = ['o']*5 + ['m']*5 + ['o']*3
     sed_flam = mag2flam( sed_mags, ALL_FILTERS )
     
     # push everything into json-able format
@@ -329,7 +329,7 @@ def serve_sed_mags():
     '''
     sed_index = int(request.args.get('index',''))   
     spec_index = int(request.args.get('spec',''))
-    spec_type = SPEC_TYPES[spec_index]
+    spec_type = SPEC_TYPES[spec_index].strip('IV') #remove dwarf/giant classifications
     
     coll = DB[ session['sid'] ]
     curs = coll['data'].find_one( {"index":sed_index} )
@@ -339,10 +339,10 @@ def serve_sed_mags():
     
     if mode == 1:
         #USNOB+2MASS
-        modeled = ['y']*6 + ['n']*5
+        modeled = ['m']*6 + ['o','m']*2 + ['o']*3
     else:
         #SDSS+2MASS
-        modeled = ['n']*5 + ['y']*3 + ['n']*3
+        modeled = ['o']*5 + ['m']*5 + ['o']*3
     # push everything into json-able format
     json_list = [{'x': FILTER_PARAMS[ALL_FILTERS[i]][0], 'y': sed_mags[i], 'err': sed_errs[i], \
                  'modeled': modeled[i], 'name': ALL_FILTERS[i]} for i in range(len(sed_mags))]

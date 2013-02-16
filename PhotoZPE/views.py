@@ -59,7 +59,7 @@ def show_upload():
             # produce catalog for single field
             #  first test whether ra,dec, and fs pass muster:
             data = ra, dec, fs = map(float, [request.form['RA'], request.form['DEC'], request.form['FS']])
-            if not (0. < ra < 360.) or not (-90. < dec < 90.) or not (0. < fs < 7200.):
+            if not (0. <= ra <= 360.) or not (-90. <= dec <= 90.) or not (0. <= fs <= 7200.):
                 return render_template( "upload.html", feedback="Make sure you've entered valid parameters!")
             # if all's good, create the collection and populate it
             coll = create_collection()

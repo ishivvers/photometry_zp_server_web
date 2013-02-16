@@ -2449,7 +2449,7 @@ pre code {
 }
 
 .pre-scrollable {
-  max-height: 900px;
+  max-height: 940px;
   overflow-y: scroll;
 }
 

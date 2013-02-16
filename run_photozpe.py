@@ -9,15 +9,13 @@ Guide: http://sebschmidt.blogspot.com/2011/07/nginx-how-to-setup-tornado-and-apa
 from PhotoZPE import app
 from sys import platform
 if __name__ == '__main__':
-    #if platform == 'darwin':
-    app.run(debug = True)  # run with flask server
-    '''
+    if platform == 'darwin':
+        app.run(debug = True)  # run with flask server
     else:
         from tornado.wsgi import WSGIContainer
         from tornado.httpserver import HTTPServer
         from tornado.ioloop import IOLoop
         
         http_server = HTTPServer(WSGIContainer(app))
-        http_server.listen(5555)
+        http_server.listen(5554)
         IOLoop.instance().start()
-    '''

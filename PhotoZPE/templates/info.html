@@ -23,7 +23,7 @@
 		  can safely be used to calculate a systematic offset between observed magnitudes (e.g. the instrumental
 		  magnitudes generated through photometry on images) and the true magnitudes for a set of observations;
 		  i.e. the photometric zeropoint.  Note: <i>u, g, r, i, z</i> &amp; <i>y</i> photometry are reported as AB magnitudes,
-		  while <i>J, H, K, B</i> &amp; <i>V</i> are Vega magnitudes.
+		  while <i>J, H, K, B, V, R</i> &amp; <i>I</i> are Vega magnitudes.
 	   </p>
 
 	  <hr>	
@@ -142,7 +142,7 @@
 			<li><b>response:</b> ascii (default) or json</li>
 		  </ul>
 		  <strong>Example:</strong><br>
-			<code>curl 'http://127.0.0.1:5000/api?mode=1&amp;ra=200.&amp;dec=20.&amp;size=450.&amp;response=ascii'</code>
+			<code>curl 'http://classy.astro.berkeley.edu/api?mode=1&amp;ra=200.&amp;dec=20.&amp;size=450.&amp;response=ascii'</code>
 		  </div><!--/span-->
 		</div><!--/row-->
 		
@@ -160,7 +160,7 @@
 				<li><b>response:</b> ascii (default) or json</li>
 			  </ul>
 			  <strong>Example:</strong><br>
-				<code>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=2&amp;response=ascii'</code>
+				<code>curl -F source_file=@YOUR_FILE 'http://classy.astro.berkeley.edu/api?mode=2&amp;response=ascii'</code>
 		  </div> <!--/span-->
 		</div><!--/row-->
 		
@@ -179,7 +179,7 @@
 				<li><b>response:</b> ascii (default) or json</li>
 			  </ul>
 			  <strong>Example:</strong><br>
-				<code>curl -F source_file=@YOUR_FILE 'http://127.0.0.1:5000/api?mode=3&amp;band=y&amp;response=ascii'</code>
+				<code>curl -F source_file=@YOUR_FILE 'http://classy.astro.berkeley.edu/api?mode=3&amp;band=y&amp;response=ascii'</code>
 		  </div> <!--/span-->
 		</div><!--/row-->
 		<div class="row-fluid">

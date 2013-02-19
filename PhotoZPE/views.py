@@ -5,7 +5,7 @@ import numpy as np
 from time import time, strftime
 import json
 import pymongo as pm
-from my_code import get_SEDs as gs #my library written to predict SEDs
+from my_code import get_SEDs_reddening as gs #my library written to predict SEDs
 
 '''
 TO DO:
@@ -208,11 +208,11 @@ def show_results():
         cat = gs.catalog( center, max(size) )
         
         # match requested coords to returned sources
-        matches = gs.identify_matches( requested_coords, cat.coords)
+        matches,tmp = gs.identify_matches( requested_coords, cat.coords)
         out_coords, out_model_indices = [],[]
         i = 0
         for j,match in enumerate(matches):
-            if match != None:
+            if match >= 0:
                 coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
                                         "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
                 out_model_indices.append( cat.models[match] )
@@ -246,7 +246,7 @@ def show_results():
         out_coords, out_model_indices = [],[]
         i = 0
         for j,match in enumerate(matches):
-            if match != None:
+            if match >= 0:
                 coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
                                         "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
                 out_model_indices.append( cat.models[match] )
@@ -483,11 +483,11 @@ def api_handler():
             center, size = gs.find_field( requested_coords )
             cat = gs.catalog( center, max(size) )
             # match requested coords to returned sources
-            matches = gs.identify_matches( requested_coords, cat.coords)
+            matches,tmp = gs.identify_matches( requested_coords, cat.coords)
             json_list = [ {'query_ID':session['sid']} ]
             i = 0
             for j,match in enumerate(matches):
-                if match != None:
+                if match >= 0:
                     coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
                                             "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
                     json_list.append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
@@ -546,7 +546,7 @@ def api_handler():
             json_list = [ {'query_ID':session['sid'], 'median_zeropoint':median_zp, 'MAD_zeropoint':mad_zp} ]
             i = 0
             for j,match in enumerate(matches):
-                if match != None:
+                if match >= 0:
                     coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
                                             "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
                     json_list.append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\

@@ -250,7 +250,7 @@ def show_results():
         inst_mags = np.array(inst_mags)
         
         center, size = gs.find_field( requested_coords )
-        cat = gs.catalog( center, max(size) )
+        cat = gs.catalog( center, max(size), input_coords=requested_coords )
         
         # pull out only the band we care about
         mod_mags = np.array([ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ])
@@ -536,7 +536,7 @@ def api_handler():
             requested_coords = data[:,:2] #put ra,dec into numpy array for sake of functions below
             
             center, size = gs.find_field( requested_coords )
-            cat = gs.catalog( center, max(size) )
+            cat = gs.catalog( center, max(size), input_coords=requested_coords )
             # match requested coords to returned sources
             matches,tmp = gs.identify_matches( requested_coords, cat.coords)
             json_list = [ {'query_ID':session['sid']} ]
@@ -587,7 +587,7 @@ def api_handler():
             inst_mags = data[:,2]
             
             center, size = gs.find_field( requested_coords )
-            cat = gs.catalog( center, max(size) )
+            cat = gs.catalog( center, max(size), input_coords=requested_coords )
             
             # pull out only the band we care about
             mod_mags = np.array([ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ])

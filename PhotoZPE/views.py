@@ -5,11 +5,10 @@ import numpy as np
 from time import time, strftime
 import json
 import pymongo as pm
-from my_code import get_SEDs_reddening as gs #my library written to predict SEDs
+from my_code import get_SEDs as gs #my library written to predict SEDs
 
 '''
 TO DO:
- - put sources on image of sky intead of list
  - have nice error pages
 '''
 
@@ -144,7 +143,7 @@ def favicon():
 @app.route('/results', methods=['GET'])
 def show_results():
     '''
-    The main results page, uses results.html (and base.html).
+    The main results page, uses results*.html (and base.html).
     '''
     # two-tiered try-except clause to figure out whether the user submitted
     #  their own SID and then whether the known SID has a database entry tied to it
@@ -176,15 +175,21 @@ def show_results():
             obj = curs.next()
             model_indices.append( obj["models"] )
             coords.append( obj["coords"] )
+        coords = np.array(coords[:max_disp])
+        center, width, offsets = coords_to_offsets( coords )
+        send_coords = []
+        for i in range(len(coords)):
+            send_coords.append( [coords[i][0], coords[i][1], offsets[i][0], offsets[i][1], model_indices[i], i] )
         if (mode == 1) or (mode == 2):
-            return render_template( "results12.html", spec_ids=map(int, model_indices[:max_disp]), coords=coords[:max_disp] )
+            return render_template( "results12.html", coords=json.dumps(send_coords),\
+                                    field_center=json.dumps(center.tolist()), field_width=str(width))
         elif mode == 3:
             band = coll.find_one( {"entry":"passband"} )["passband"]
             zp_est = coll.find_one( {"entry":"zeropoint_estimate"})["zp"]
             zp_mad = coll.find_one( {"entry":"zeropoint_estimate"})["mad"]
-            return render_template( "results3.html", spec_ids=map(int, model_indices[:max_disp]), coords=coords[:max_disp],\
-                                        zp=round(zp_est,2), mad=round(zp_mad,2), band=band )
-    
+            return render_template( "results3.html", coords=json.dumps(send_coords), field_center=json.dumps(center.tolist()),\
+                        field_width=str(width), zp=round(zp_est,2), mad=round(zp_mad,2), band=band )
+                        
     if mode == 1:
         search_field = coll.find_one( {"entry":"search_field"})
         ra = search_field['ra']
@@ -194,7 +199,13 @@ def show_results():
         for i in range(len(cat.SEDs)):
             coll['data'].insert( {"index":i, "sed":cat.SEDs[i].tolist(), "errors":cat.full_errors[i].tolist(),\
                                     "mode":cat.modes[i], "coords":cat.coords[i].tolist(), "models":int(cat.models[i])} )
-        return render_template( "results12.html", spec_ids=map(int, cat.models[:max_disp]), coords=cat.coords[:max_disp] )
+        coords = cat.coords[:max_disp]
+        center, width, offsets = coords_to_offsets( coords )
+        send_coords = []
+        for i in range(len(coords)):
+            send_coords.append( [coords[i][0], coords[i][1], offsets[i][0], offsets[i][1], cat.models[i], i] )
+        return render_template( "results12.html", coords=json.dumps(send_coords),\
+                                    field_center=json.dumps(center.tolist()), field_width=str(width))
     
     elif mode == 2:
         requested_coords = []
@@ -205,7 +216,7 @@ def show_results():
         requested_coords = np.array(requested_coords) #put into numpy array for sake of functions below
         
         center, size = gs.find_field( requested_coords )
-        cat = gs.catalog( center, max(size) )
+        cat = gs.catalog( center, max(size), input_coords=requested_coords )
         
         # match requested coords to returned sources
         matches,tmp = gs.identify_matches( requested_coords, cat.coords)
@@ -218,7 +229,14 @@ def show_results():
                 out_model_indices.append( cat.models[match] )
                 out_coords.append( requested_coords[j] )
                 i +=1
-        return render_template( "results12.html", spec_ids=map(int, out_model_indices[:max_disp]), coords=out_coords[:max_disp] )
+        
+        out_coords = np.array(out_coords[:max_disp])
+        center, width, offsets = coords_to_offsets( out_coords )
+        send_coords = []
+        for i in range(len(out_coords)):
+            send_coords.append( [out_coords[i][0], out_coords[i][1], offsets[i][0], offsets[i][1], out_model_indices[i], i] )
+        return render_template( "results12.html", coords=json.dumps(send_coords),\
+                                            field_center=json.dumps(center.tolist()), field_width=str(width))
     
     elif mode == 3:
         band = coll.find_one( {"entry":"passband"} )["passband"]
@@ -253,10 +271,47 @@ def show_results():
                 out_coords.append( requested_coords[j] )
                 i +=1
         
-        return render_template( "results3.html", spec_ids=map(int, out_model_indices[:max_disp]), coords=out_coords[:max_disp],\
-                                    zp=round(median_zp,2), mad=round(mad_zp,2), band=band )
+        out_coords = np.array(out_coords[:max_disp])
+        center, width, offsets = coords_to_offsets( out_coords )
+        send_coords = []
+        for i in range(len(out_coords)):
+            send_coords.append( [out_coords[i][0], out_coords[i][1], offsets[i][0], offsets[i][1], out_model_indices[i], i] )
+            
+        return render_template( "results3.html", coords=json.dumps(send_coords), field_center=json.dumps(center.tolist()),\
+                        field_width=str(width), zp=round(median_zp,2), mad=round(mad_zp,2), band=band )
 
 
+def coords_to_offsets( coords ):
+    '''
+    Converts each set of coordinates to an angular offset from center.
+    Used to query images from online DSS image server.
+    Returns:
+     field_center (ra,dec in decimal degrees)
+	 field_width (in arcminutes) and
+	 offsets_from_center (in arcminutes)
+    '''
+    edge = .5 # size to add to field edges in arcminutes
+    
+    r_c = np.deg2rad(min(coords[:,0]) + ( max(coords[:,0]) - min(coords[:,0]) )/2.)
+    d_c = np.deg2rad(min(coords[:,1]) + ( max(coords[:,1]) - min(coords[:,1]) )/2.)
+    
+    # compute the offsets in arcminutes
+    r = np.deg2rad(coords[:,0])
+    d = np.deg2rad(coords[:,1])
+    offsets = np.empty_like( coords )
+    offsets[:,0] = (np.cos(d)*np.sin(r-r_c))/(np.cos(d_c)*np.cos(d)*np.cos(r-r_c) +\
+                                              np.sin(d_c)*np.sin(d))
+    offsets[:,1] = (np.cos(d_c)*np.sin(d)-np.cos(d)*np.sin(d_c)*np.cos(r-r_c))/ \
+                   (np.sin(d_c)*np.sin(d)+np.cos(d_c)*np.cos(d)*np.cos(r-r_c))
+    offsets = np.rad2deg(offsets) * 60.
+    
+    # and now the width in arcminutes
+    r_fw = max(offsets[:,0]) - min(offsets[:,0])
+    d_fw = max(offsets[:,1]) - min(offsets[:,1])
+    
+    return np.rad2deg([r_c, d_c]), max([r_fw, d_fw])+2*edge, offsets
+    
+    
 #######################################################################
 @app.route('/info', methods=['GET'])
 def show_info():

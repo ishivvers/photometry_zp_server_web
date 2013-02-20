@@ -7438,9 +7438,22 @@ a.badge:hover {
   margin-bottom: 0;
 }
 
+.hero-plain {
+    padding: 10px;
+    margin-bottom: 0px;
+    font-size: 18px;
+    font-weight: 200;
+    line-height: 30px;
+    color: inherit;
+    background-color: #eeeeee;
+    -webkit-border-radius: 6px;
+       -moz-border-radius: 6px;
+            border-radius: 6px;
+}
+
 .hero-unit {
-  padding: 60px;
-  margin-bottom: 30px;
+  padding: 40px;
+  margin-bottom: 20px;
   font-size: 18px;
   font-weight: 200;
   line-height: 30px;

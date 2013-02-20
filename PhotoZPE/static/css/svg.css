@@ -16,7 +16,7 @@
 }
 
 .circle {
-  fill: #fff;
+  fill: rgba(250,250,250,0.5);
   stroke-width: 1.5px;
 }
 
@@ -37,4 +37,10 @@
 
 .bar text {
   fill: #fff;
+}
+
+.dot {
+  fill: rgba(250,250,250,0.01);
+  stroke: steelblue;
+  stroke-width: 1.5px;
 }

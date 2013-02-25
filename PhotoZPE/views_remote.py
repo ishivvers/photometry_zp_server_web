@@ -61,10 +61,18 @@ def show_upload():
         if mode == 1:
             # produce catalog for single field
             #  first test whether ra,dec, and fs pass muster:
-            data = ra, dec, fs = map(float, [request.form['RA'], request.form['DEC'], request.form['FS']])
+            try:
+                ra = parse_ra( request.form['RA'] )
+                dec = parse_dec( request.form['DEC'] )
+                fs = float( request.form['FS'] )
+            except:
+                return render_template( "upload.html", feedback="Could not interpret input - please enter valid coordinates "+\
+                                                                "in decimal degrees or sexagesimal (HH:MM:SS.S, DD:MM:SS.S), "+\
+                                                                "and make sure the requested field is 7200 arcseconds or smaller.")
             if not (0. <= ra <= 360.) or not (-90. <= dec <= 90.) or not (0. <= fs <= 7200.):
-                return render_template( "upload.html", feedback="Make sure you've entered valid parameters!")
+                return render_template( "upload.html", feedback="Coordinates or field size beyond limits.")
             # if all's good, create the collection and populate it
+            data = ra, dec, fs
             coll = create_collection()
             coll.insert( {"entry":"mode", "mode":mode} )
             coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":fs} )
@@ -78,10 +86,10 @@ def show_upload():
                     data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000] #only accept first 1000 sources
                 except:
                    return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                   "is a properly-formatted .txt file.")
+                                                            "is a properly-formatted ASCII file.")
             else:
                 return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                "is a properly-formatted .txt file.")
+                                                            "is a properly-formatted ASCII file that ends in .txt.")
             # if all's good, create the collection and populate it
             coll = create_collection()
             coll.insert( {"entry":"mode", "mode":mode} )
@@ -97,10 +105,10 @@ def show_upload():
                     data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000]  #only accept first 1000 sources
                 except:
                     return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                    "is a properly-formatted .txt file.")
+                                                    "is a properly-formatted ASCII file.")
             else:
                 return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                "is a properly-formatted .txt file.")
+                                                "is a properly-formatted ASCII file that ends in .txt.")
             # if all's good, create the collection and populate it
             band = request.form["band"]
             coll = create_collection()
@@ -129,6 +137,164 @@ def allowed_file(filename):
     '''
     return True
     #return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+
+def parse_ra( inn ):
+    '''
+    Parse input RA string, either decimal degrees or sexagesimal HH:MM:SS.SS (or similar variants).
+    Returns decimal degrees.
+    '''
+    # if simple float, assume decimal degrees
+    try:
+        ra = float(inn)
+        return ra
+    except:
+        pass
+    # try to parse with phmsdms:
+    res = phmsdms(inn)
+    ra = 15.*( res['vals'][0] + res['vals'][1]/60. + res['vals'][2]/3600. )
+    return ra
+
+
+def parse_dec( inn ):
+    '''
+    Parse input Dec string, either decimal degrees or sexagesimal DD:MM:SS.SS (or similar variants).
+    Returns decimal degrees.
+    '''
+    # if simple float, assume decimal degrees
+    try:
+        dec = float(inn)
+        return dec
+    except:
+        pass
+    # try to parse with phmsdms:
+    res = phmsdms(inn)
+    dec = res['sign']*( res['vals'][0] + res['vals'][1]/60. + res['vals'][2]/3600. )
+    return dec
+
+
+def phmsdms(hmsdms):
+    """
+    +++ Pulled from python package 'angles' +++
+    Parse a string containing a sexageismal number.
+    
+    This can handle several types of delimiters and will process
+    reasonably valid strings. See examples.
+    
+    Parameters
+    ----------
+    hmsdms : str
+        String containing a sexagesimal number.
+        
+    Returns
+    -------
+    d : dict
+    
+        parts : a 3 element list of floats
+            The three parts of the sexagesimal number that were
+            identified.
+        vals : 3 element list of floats
+            The numerical values of the three parts of the sexagesimal
+            number.
+        sign : int
+            Sign of the sexagesimal number; 1 for positive and -1 for
+            negative.
+        units : {"degrees", "hours"}
+            The units of the sexagesimal number. This is infered from
+            the characters present in the string. If it a pure number
+            then units is "degrees".
+    """
+    units = None
+    sign = None
+    # Floating point regex:
+    # http://www.regular-expressions.info/floatingpoint.html
+    #
+    # pattern1: find a decimal number (int or float) and any
+    # characters following it upto the next decimal number.  [^0-9\-+]*
+    # => keep gathering elements until we get to a digit, a - or a
+    # +. These three indicates the possible start of the next number.
+    pattern1 = re.compile(r"([-+]?[0-9]*\.?[0-9]+[^0-9\-+]*)")
+    # pattern2: find decimal number (int or float) in string.
+    pattern2 = re.compile(r"([-+]?[0-9]*\.?[0-9]+)")
+    hmsdms = hmsdms.lower()
+    hdlist = pattern1.findall(hmsdms)
+    parts = [None, None, None]
+    
+    def _fill_right_not_none():
+        # Find the pos. where parts is not None. Next value must
+        # be inserted to the right of this. If this is 2 then we have
+        # already filled seconds part, raise exception. If this is 1
+        # then fill 2. If this is 0 fill 1. If none of these then fill
+        # 0.
+        rp = reversed(parts)
+        for i, j in enumerate(rp):
+            if j is not None:
+                break
+        if  i == 0:
+            # Seconds part already filled.
+            raise ValueError("Invalid string.")
+        elif i == 1:
+            parts[2] = v
+        elif i == 2:
+            # Either parts[0] is None so fill it, or it is filled
+            # and hence fill parts[1].
+            if parts[0] is None:
+                parts[0] = v
+            else:
+                parts[1] = v
+                
+    for valun in hdlist:
+        try:
+            # See if this is pure number.
+            v = float(valun)
+            # Sexagesimal part cannot be determined. So guess it by
+            # seeing which all parts have already been identified.
+            _fill_right_not_none()
+        except ValueError:
+            # Not a pure number. Infer sexagesimal part from the
+            # suffix.
+            if "hh" in valun or "h" in valun:
+                m = pattern2.search(valun)
+                parts[0] = float(valun[m.start():m.end()])
+                units = "hours"
+            if "dd" in valun or "d" in valun:
+                m = pattern2.search(valun)
+                parts[0] = float(valun[m.start():m.end()])
+                units = "degrees"
+            if "mm" in valun or "m" in valun:
+                m = pattern2.search(valun)
+                parts[1] = float(valun[m.start():m.end()])
+            if "ss" in valun or "s" in valun:
+                m = pattern2.search(valun)
+                parts[2] = float(valun[m.start():m.end()])
+            if "'" in valun:
+                m = pattern2.search(valun)
+                parts[1] = float(valun[m.start():m.end()])
+            if '"' in valun:
+                m = pattern2.search(valun)
+                parts[2] = float(valun[m.start():m.end()])
+            if ":" in valun:
+                # Sexagesimal part cannot be determined. So guess it by
+                # seeing which all parts have already been identified.
+                v = valun.replace(":", "")
+                v = float(v)
+                _fill_right_not_none()
+        if not units:
+            units = "degrees"
+            
+    # Find sign. Only the first identified part can have a -ve sign.
+    for i in parts:
+        if i and i < 0.0:
+            if sign is None:
+                sign = -1
+            else:
+                raise ValueError("Only one number can be negative.")
+                
+    if sign is None:  # None of these are negative.
+        sign = 1
+        
+    vals = [abs(i) if i is not None else 0.0 for i in parts]
+    return dict(sign=sign, units=units, vals=vals, parts=parts)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -474,8 +640,8 @@ def api_handler():
         Produce & return a catalog in a field.
         '''
         try:
-            ra = float( request.args.get('ra') )
-            dec = float( request.args.get('dec') )
+            ra = parse_ra( request.args.get('ra') )
+            dec = parse_dec( request.args.get('dec') )
             size = float( request.args.get('size') )
         except:
             return Response( '{ success:false, message:"Request not formatted properly."}',
@@ -511,23 +677,24 @@ def api_handler():
         '''
         try:
             mode = int( request.args.get('mode') )
+            source_file = request.files["source_file"]
         except:
             return Response( '{ success:false, message:"Request not formatted properly."}',
                             mimetype='application/json')
-        if mode == 2:
-            # produce matched catalog only
-            source_file = request.files["source_file"]
-            if source_file and allowed_file(source_file.filename):
-                # try to parse with numpy
-                try:
-                    source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
-                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000] #only accept first 1000 sources
-                except:
-                    return Response( '{ success:false, message:"Uploaded file incorrectly formatted."}',
-                                    mimetype='application/json')
-            else:
+        if source_file and allowed_file(source_file.filename):
+            # try to parse with numpy
+            try:
+                source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
+                data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000] #only accept first 1000 sources
+            except:
                 return Response( '{ success:false, message:"Uploaded file incorrectly formatted."}',
                                 mimetype='application/json')
+        else:
+            return Response( '{ success:false, message:"Uploaded file needs to end in .txt."}',
+                            mimetype='application/json')
+
+        if mode == 2:
+            # produce matched catalog only
             # if all's good, create the collection and populate it
             coll = create_collection()
             coll.insert( {"entry":"mode", "mode":mode} )
@@ -559,23 +726,11 @@ def api_handler():
                 return response
         
         elif mode == 3:
+            # produce matched catalog and zeropoint estimate
             try:
                 band = request.args.get('band')
             except:
                 return Response( '{ success:false, message:"Request not formatted properly."}',
-                                mimetype='application/json')
-            # produce matched catalog and zeropoint estimate
-            source_file = request.files["source_file"]
-            if source_file and allowed_file(source_file.filename):
-                # try to parse with numpy
-                try:
-                    source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
-                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000]  #only accept first 1000 sources
-                except:
-                    return Response( '{ success:false, message:"Uploaded file incorrectly formatted."}',
-                                    mimetype='application/json')
-            else:
-                return Response( '{ success:false, message:"Uploaded file incorrectly formatted."}',
                                 mimetype='application/json')
             # if all's good, create the collection and populate it
             coll = create_collection()

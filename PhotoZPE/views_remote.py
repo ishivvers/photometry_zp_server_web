@@ -62,8 +62,8 @@ def show_upload():
             # produce catalog for single field
             #  first test whether ra,dec, and fs pass muster:
             try:
-                ra = parse_ra( request.form['RA'] )
-                dec = parse_dec( request.form['DEC'] )
+                ra = round(parse_ra( request.form['RA'] ), 6)
+                dec = round(parse_dec( request.form['DEC'] ), 6)
                 fs = float( request.form['FS'] )
             except:
                 return render_template( "upload.html", feedback="Could not interpret input - please enter valid coordinates "+\
@@ -307,6 +307,12 @@ def home():
 def favicon():
     # quick redirect to show favicon
     return send_from_directory(app.root_path+'/static/img','favicon.ico')
+
+
+@app.route('/robots.txt')
+def robots():
+    # quick redirect to serve robots.txt
+    return send_from_directory(app.root_path+'/static/','robots.txt')
 
 
 #######################################################################

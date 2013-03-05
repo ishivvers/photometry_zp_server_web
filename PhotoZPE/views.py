@@ -4,6 +4,7 @@ from PhotoZPE import app #the flask object itself, created by __init__.py
 import numpy as np
 from time import time, strftime
 import json
+import re
 import pymongo as pm
 from my_code import get_SEDs as gs #my library written to predict SEDs
 
@@ -72,6 +73,9 @@ def show_upload():
             coll = create_collection()
             coll.insert( {"entry":"mode", "mode":mode} )
             coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":fs} )
+            # and take them straight to the results
+            return redirect(url_for('show_results'))
+            
         elif mode == 2:
             # produce matched catalog
             source_file = request.files["source_file"]
@@ -91,6 +95,8 @@ def show_upload():
             coll.insert( {"entry":"mode", "mode":mode} )
             for row in data:
                 coll["requested_sources"].insert( {"ra":row[0], "dec":row[1] })
+            # have the user check that the file uploaded correctly
+            return render_template( "upload.html", mode=mode, data=data[:5] )
         elif mode == 3:
             # produce matched catalog and zeropoint estimate
             source_file = request.files["source_file"]
@@ -101,7 +107,7 @@ def show_upload():
                     data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000]  #only accept first 1000 sources
                 except:
                     return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                            "is a properly-formatted ASCII file.)
+                                                            "is a properly-formatted ASCII file.")
             else:
                 return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
                                                             "is a properly-formatted ASCII file that ends in .txt.")
@@ -112,9 +118,8 @@ def show_upload():
             coll.insert( {"entry":"passband", "passband":band} )
             for row in data:
                 coll["requested_sources"].insert( {"ra":row[0], "dec":row[1], "inst_mag":row[2] })
-        if mode == 1 or mode == 2:
-            band = None
-        return render_template( "upload.html", mode=mode, data=data[:5], band=band )
+            # have the user check that the file uploaded correctly
+            return render_template( "upload.html", mode=mode, data=data[:5], band=band )
 
 
 ## show_upload() helper functions
@@ -145,11 +150,10 @@ def parse_ra( inn ):
         ra = float(inn)
         return ra
     except:
-        pass
-    # try to parse with phmsdms:
-    res = phmsdms(inn)
-    ra = 15.*( res['vals'][0] + res['vals'][1]/60. + res['vals'][2]/3600. )
-    return ra
+        # try to parse with phmsdms:
+        res = phmsdms(inn)
+        ra = 15.*( res['vals'][0] + res['vals'][1]/60. + res['vals'][2]/3600. )
+        return ra
 
 
 def parse_dec( inn ):
@@ -162,11 +166,10 @@ def parse_dec( inn ):
         dec = float(inn)
         return dec
     except:
-        pass
-    # try to parse with phmsdms:
-    res = phmsdms(inn)
-    dec = res['sign']*( res['vals'][0] + res['vals'][1]/60. + res['vals'][2]/3600. )
-    return dec
+        # try to parse with phmsdms:
+        res = phmsdms(inn)
+        dec = res['sign']*( res['vals'][0] + res['vals'][1]/60. + res['vals'][2]/3600. )
+        return dec
 
 
 def phmsdms(hmsdms):
@@ -303,6 +306,12 @@ def home():
 def favicon():
     # quick redirect to show favicon
     return send_from_directory(app.root_path+'/static/img','favicon.ico')
+
+
+@app.route('/robots.txt')
+def robots():
+    # quick redirect to serve robots.txt
+    return send_from_directory(app.root_path+'/static/','robots.txt')
 
 
 #######################################################################
@@ -475,7 +484,7 @@ def coords_to_offsets( coords ):
     r_fw = max(offsets[:,0]) - min(offsets[:,0])
     d_fw = max(offsets[:,1]) - min(offsets[:,1])
     
-    return np.rad2deg([r_c, d_c]), max([r_fw, d_fw])+2*edge, offsets
+    return np.rad2deg([r_c, d_c]).round(6), max([r_fw, d_fw])+2*edge, offsets
     
     
 #######################################################################
@@ -547,7 +556,7 @@ def serve_sed_flams():
 @app.route('/servemags', methods=['GET'])
 def serve_sed_mags():
     '''
-    Loads magnitudes (obs and modeled) from database created by results page, returns FLAM
+    Loads magnitudes (obs and modeled) from database created by results page, returns mag.
      and the spectral type of the fit.
     Needs database index and spectrum id (given as url?index=value&spec=value).
     '''

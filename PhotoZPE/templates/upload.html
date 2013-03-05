@@ -7,87 +7,90 @@
   <div class="row-fluid">
 	<div class="span12">
       <div class="hero-unit">
-	<h3>Welcome to PhotoZPE, the All-Sky Photometric Zeropoint Estimation Engine.</h3>
-	<p> This site uses a set of catalogs, together covering the entire sky,
-		along with synthetic photometry of standard spectra
-		to produce estimated photometry in missing bands, returning
-		observations or estimates for <i>u, g, r, i, z, y, B, V, R, I, J, H</i> &amp; <i>K</i> passbands.<br>
-		Please read the <a href="{{ url_for('show_info') }}">info page</a> for
-		a complete description, a discussion of errors,	and a few examples. <br>
-		<strong>There are three modes:</strong>
-		<ol>
-			<li>Produce a catalog of a specific field (or source) in the sky.</li>
-			<li>Produce a catalog of a set of stars (localized on the sky).</li>
-			<li>Estimate the photometric zeropoint of a set of observations in any band.</li>
-		</ol>
-		Please contact me with any questions!<br>
-		-<a target="_blank" href="http://astro.berkeley.edu/~ishivvers/">Isaac Shivvers</a> <br>
-		 <i>ishivvers (at) astro (dot) berkeley (dot) edu</i>
-		</p>
+		<h3>Welcome to PhotoZPE, the All-Sky Photometric Zeropoint Estimation Engine.</h3>
+		<p> This site uses a set of catalogs, together covering the entire sky,
+			along with synthetic photometry of standard spectra
+			to produce estimated photometry in missing bands, returning
+			observations or estimates for <i>u, g, r, i, z, y, B, V, R, I, J, H</i> &amp; <i>K</i> passbands.<br>
+			Please read the <a href="{{ url_for('show_info') }}">info page</a> for
+			a complete description, a discussion of errors,	and a few examples. <br><br>
 		
-		<div class="row-fluid">
-	      <div class="span8 offset2">
-		  {% if mode %}
-			<hr>
-			  <p>Verify that the coordinates (or first few data points) below are correct and click Continue.<br>
-				PLEASE DO NOT REFRESH THIS WINDOW - depending on the size of your request, 
-				the response may take up to a minute or two.  If this page times out, click your
-				browser's back button, then follow the link to the Results page to inspect the result.</p>
-			  {% if mode>1 %}
-			  <table class="table table-condensed">
-			    <tr><td><b>RA</b></td>
-				<td><b>DEC</b></td>
-				{% if mode==3 %}
-				  <td><b>{{band}} Mag</b></td>
-				{% endif %}
-				</tr>
-				{% for row in data %}
-				  <tr><td>{{ row[0] }}</td>
-				  <td>{{ row[1] }}</td>
-				  {% if mode==3 %}
-				    <td>{{ row[2] }}</td>
-				  {% endif %}
-				  </tr>
-				{% endfor %}
-		      </table>
-		      {% endif %}
-		      {% if mode==1 %}
-				<p>
-					<b>RA:</b> {{ data[0] }}&deg; <br>
-					<b>DEC:</b> {{ data[1] }}&deg; <br>
-					<b>Field Size:</b> {{ data[2] }}&quot; <br>
-				</p>
-		      {% endif %}
-			  <a href="{{ url_for('show_results') }}" class="btn btn-primary">Continue</a>
-		  {% endif %}
+			Please contact me with any questions.<br>
+			-<a target="_blank" href="http://astro.berkeley.edu/~ishivvers/">Isaac Shivvers</a> <br>
+			 <i>ishivvers (at) astro (dot) berkeley (dot) edu</i>
+			</p><br>
+			
+			{% if not mode %}
+			{# only show this request box if we haven't already put in a request below #}
+			<div class="row-fluid">
+				<div class="span6 offset3">
+				<strong>Usage:</strong>
+				<p>Enter an RA and DEC, in decimal degrees, and field size
+					in arcseconds. Note: maximum field size is 2&deg; (7200"), and
+					large requests may take up to a minute to process.</p>
+				<form class="form-inline" method="POST">
+				  <input type="text" name="RA" class="input-small" placeholder="RA (&deg;)">
+				  <input type="text" name="DEC" class="input-small" placeholder="DEC (&deg;)">
+				  <input type="text" name="FS" class="input-small" placeholder="Field Size (&quot;)">
+				  <input type="hidden" name="mode" value="1">
+				  <br><input type="submit" class="btn btn-primary" value="Submit"/>
+				</form>
+				</div><!--/span-->
+			</div><!--/row-->
+			{% endif %}
 
-	      {% if feedback %}
-		    <h3> {{ feedback }} </h3>
-		  {% endif %}
-		</div><!--/span-->
-	  </div><!--/row-->
-	
+			{% if mode %}
+			{# ask for confirmation if a file was uploaded #}
+			<div class="row-fluid">
+		      <div class="span8 offset2">
+				<hr>
+				  <p>Verify that the file uploaded correctly and click Continue.<br>.</p>
+				  <table class="table table-condensed">
+				    <tr><td><b>RA</b></td>
+					<td><b>DEC</b></td>
+					{% if mode==3 %}
+					  <td><b>{{band}} Mag</b></td>
+					{% endif %}
+					</tr>
+					{% for row in data %}
+					  <tr><td>{{ row[0] }}</td>
+					  <td>{{ row[1] }}</td>
+					  {% if mode==3 %}
+					    <td>{{ row[2] }}</td>
+					  {% endif %}
+					  </tr>
+					{% endfor %}
+			      </table>
+				  <a href="{{ url_for('show_results') }}" class="btn btn-primary">Continue</a>
+				</div><!--/span-->
+			  </div><!--/row-->
+			  {% endif %}
+
+		      {% if feedback %}
+			<div class="row-fluid">
+		      <div class="span8 offset2">
+			    <h3> {{ feedback }} </h3>
+				</div><!--/span-->
+			  </div><!--/row-->
+			  {% endif %}
+
 	    </div><!--/hero-->
   	  </div><!--/span-->
 	</div><!--/row-->
 	<div class="row-fluid">
 		<div class="span4">
-			<h3>1</h3>
-			<p>Enter an RA and DEC, in decimal degrees, and field size
-				in arcseconds. Note: maximum field size is 2&deg; (7200").</p>
-			<form class="form-inline" method="POST">
-			  <input type="text" name="RA" class="input-small" placeholder="RA (&deg;)">
-			  <input type="text" name="DEC" class="input-small" placeholder="DEC (&deg;)">
-			  <input type="text" name="FS" class="input-small" placeholder="Field Size (&quot;)">
-			  <input type="hidden" name="mode" value="1">
-			  <br><input type="submit" class="btn btn-primary" value="Submit"/>
-			</form>
+			<h3>Other usages:</h3>
+			<p>This site can also produce catalogs and zeropoints of uploaded star lists - see
+				submission forms to the right.  These both require space-separated or tab-separated
+				ASCII files with no blank lines (use # to comment out lines), with all coordinates in 
+				decimal degrees. Designed for stars grouped together in a field and capped at 1000 sources.
+				<br><br>
+			   It also provides an API, for automated queries using a program like <code>curl</code> or <code>wget</code>.
+			    See <a href="{{ url_for('show_info') }}#api" >here</a> for more information.
 		</div><!--/span-->
 		<div class="span4">
-			<h3>2</h3>
-			<p>Upload a space-separated or tab-separated file containing RA and DEC (in decimal degrees)
-				as the first two columns.  Note this is designed for stars grouped together in a
-				field and is capped at 1000 sources.</p>
+			<h3>Catalog Matching</h3>
+			<p>Upload a star list with RA and Dec as the first two columns.</p>
 			<form action="upload" method="POST" enctype="multipart/form-data">
 			<div class="fileupload fileupload-new" data-provides="fileupload">
 			  <span class="btn btn-file"><span class="fileupload-new">Select file</span>
@@ -100,11 +103,10 @@
 			</form>
 		</div><!--/span-->
 		<div class="span4">
-			<h3>3</h3>
-			<p>Upload a space-separated or tab-separated file containing RA and DEC (in decimal degrees)
-				as the first two columns, and instrumental magnitudes as the third, and	select the
-				observed passband from the drop-down menu.
-				Note this is designed for stars grouped together in a field and is capped at 1000 sources.</p>
+			<h3>Catalog Matching + <br>Zeropoint Estimate</h3>
+			<p>Upload a star list with RA and Dec (in decimal degrees) as the first two columns,
+				instrumental magnitudes as the third, and select the
+				observed passband from the drop-down menu.</p>
 			<form action="upload" method="POST" enctype="multipart/form-data">
 	    	  <div class="fileupload fileupload-new" data-provides="fileupload">
 			    <span class="btn btn-file"><span class="fileupload-new">Select file</span>

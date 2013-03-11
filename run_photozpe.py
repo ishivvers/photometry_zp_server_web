@@ -8,7 +8,7 @@ Guide: http://sebschmidt.blogspot.com/2011/07/nginx-how-to-setup-tornado-and-apa
 from PhotoZPE import app
 from sys import platform
 
-app.run(debug=True)
+#app.run(debug=True)
 
 if __name__ == '__main__':
     from tornado.wsgi import WSGIContainer

@@ -6,7 +6,14 @@ from time import time, strftime
 import json
 import re
 import pymongo as pm
-from my_code import get_SEDs as gs #my library written to predict SEDs
+
+from sys import platform
+if 'linux' in platform.lower():
+    # startup the xml connection to beast
+    gs = xmlrpclib.ServerProxy('http://beast.berkeley.edu:5555', allow_none=True)
+else:
+    # import the local version
+    from my_code import get_SEDs as gs
 
 '''
 TO DO:
@@ -59,8 +66,8 @@ def show_upload():
             # produce catalog for single field
             #  first test whether ra,dec, and fs pass muster:
             try:
-                ra = parse_ra( request.form['RA'] )
-                dec = parse_dec( request.form['DEC'] )
+                ra = round(parse_ra( request.form['RA'] ), 6)
+                dec = round(parse_dec( request.form['DEC'] ), 6)
                 fs = float( request.form['FS'] )
             except:
                 return render_template( "upload.html", feedback="Could not interpret input - please enter valid coordinates "+\
@@ -364,16 +371,22 @@ def show_results():
             zp_mad = coll.find_one( {"entry":"zeropoint_estimate"})["mad"]
             return render_template( "results3.html", coords=json.dumps(send_coords), field_center=json.dumps(center.tolist()),\
                         field_width=str(width), zp=round(zp_est,2), mad=round(zp_mad,2), band=band )
-                        
+    
+    # build the catalog and display it                     
     if mode == 1:
         search_field = coll.find_one( {"entry":"search_field"})
         ra = search_field['ra']
         dec = search_field['dec']
         fs = search_field['fs']
         cat = gs.catalog( (ra,dec), fs ) #square box of size fs
+        # make sure all the types are consistent, whether we're using the beast or local calculations
+        if type(cat.SEDs) != list:
+            cat.SEDs = cat.SEDs.tolist()
+            cat.full_errors = cat.full_errors.tolist()
+            cat.coords = cat.coords.tolist()
         for i in range(len(cat.SEDs)):
-            coll['data'].insert( {"index":i, "sed":cat.SEDs[i].tolist(), "errors":cat.full_errors[i].tolist(),\
-                                    "mode":cat.modes[i], "coords":cat.coords[i].tolist(), "models":int(cat.models[i])} )
+            coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i],\
+                                    "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
         coords = cat.coords[:max_disp]
         center, width, offsets = coords_to_offsets( coords )
         send_coords = []
@@ -388,19 +401,25 @@ def show_results():
         for i in range(curs.count()):
             obj = curs.next()
             requested_coords.append( [obj['ra'], obj['dec']] )
-        requested_coords = np.array(requested_coords) #put into numpy array for sake of functions below
         
         center, size = gs.find_field( requested_coords )
         cat = gs.catalog( center, max(size), input_coords=requested_coords )
         
         # match requested coords to returned sources
-        matches,tmp = gs.identify_matches( requested_coords, cat.coords)
+        matches,tmp = gs.identify_matches( requested_coords, cat.coords )
+        
+        # make sure all the types are consistent, whether we're using the beast or local calculations
+        if type(cat.SEDs) != list:
+            cat.SEDs = cat.SEDs.tolist()
+            cat.full_errors = cat.full_errors.tolist()
+            cat.coords = cat.coords.tolist()
+        
         out_coords, out_model_indices = [],[]
         i = 0
         for j,match in enumerate(matches):
             if match >= 0:
-                coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
-                                        "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
+                coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match],\
+                                        "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
                 out_model_indices.append( cat.models[match] )
                 out_coords.append( requested_coords[j] )
                 i +=1
@@ -421,14 +440,17 @@ def show_results():
             obj = curs.next()
             requested_coords.append( [obj['ra'], obj['dec']] )
             inst_mags.append( obj['inst_mag'] )
-        requested_coords = np.array(requested_coords) #put into numpy array for sake of functions below
-        inst_mags = np.array(inst_mags)
         
         center, size = gs.find_field( requested_coords )
         cat = gs.catalog( center, max(size), input_coords=requested_coords )
         
+        # make sure all the types are consistent, whether we're using the beast or local calculations
+        if type(cat.SEDs) != list:
+            cat.SEDs = cat.SEDs.tolist()
+            cat.full_errors = cat.full_errors.tolist()
+            cat.coords = cat.coords.tolist()
         # pull out only the band we care about
-        mod_mags = np.array([ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ])
+        mod_mags = [ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ]
         
         # calculate zeropoint
         median_zp, mad_zp, matches, all_zps = gs.calc_zeropoint( requested_coords, cat.coords, inst_mags, mod_mags, return_zps=True)
@@ -440,8 +462,8 @@ def show_results():
         i = 0
         for j,match in enumerate(matches):
             if match >= 0:
-                coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
-                                        "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
+                coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match],\
+                                        "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
                 out_model_indices.append( cat.models[match] )
                 out_coords.append( requested_coords[j] )
                 i +=1
@@ -470,7 +492,7 @@ def coords_to_offsets( coords ):
     r_c = np.deg2rad(min(coords[:,0]) + ( max(coords[:,0]) - min(coords[:,0]) )/2.)
     d_c = np.deg2rad(min(coords[:,1]) + ( max(coords[:,1]) - min(coords[:,1]) )/2.)
     
-    # compute the offsets in arcminutes
+    # compute the offsets in radians
     r = np.deg2rad(coords[:,0])
     d = np.deg2rad(coords[:,1])
     offsets = np.empty_like( coords )
@@ -478,6 +500,18 @@ def coords_to_offsets( coords ):
                                               np.sin(d_c)*np.sin(d))
     offsets[:,1] = (np.cos(d_c)*np.sin(d)-np.cos(d)*np.sin(d_c)*np.cos(r-r_c))/ \
                    (np.sin(d_c)*np.sin(d)+np.cos(d_c)*np.cos(d)*np.cos(r-r_c))
+    
+    # slightly rotate the offsets to mesh with the images from DSS server
+    '''
+    print abs(d_c) / np.pi
+    if abs(d_c)>(np.pi/2):
+        theta = (d_c/np.pi)*0.37
+    else:
+        theta = (d_c/np.pi)*0
+    '''
+    offsets = rotate_coords( offsets, 0. )
+    
+    # and finally present them in arcminutes
     offsets = np.rad2deg(offsets) * 60.
     
     # and now the width in arcminutes
@@ -485,7 +519,15 @@ def coords_to_offsets( coords ):
     d_fw = max(offsets[:,1]) - min(offsets[:,1])
     
     return np.rad2deg([r_c, d_c]).round(6), max([r_fw, d_fw])+2*edge, offsets
-    
+
+
+def rotate_coords( coords, theta ):
+    '''
+    Rotates coordinates about center by angle theta (all in radians).
+    '''
+    R = np.array( [[np.cos(theta), -1*np.sin(theta)], [np.sin(theta), np.cos(theta)]] )
+    return np.dot(R, (coords).T).T
+
     
 #######################################################################
 @app.route('/info', methods=['GET'])
@@ -664,12 +706,16 @@ def api_handler():
         coll.insert( {"entry":"mode", "mode":1} )
         coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":size} )
         cat = gs.catalog( (ra,dec), size )
-    
+        if type(cat.SEDs) != list:
+            cat.SEDs = cat.SEDs.tolist()
+            cat.full_errors = cat.full_errors.tolist()
+            cat.coords = cat.coords.tolist()
+
         # put the catalog entries both into the database and into a response
         json_list = [ {'query_ID':session['sid']} ]
         for i in range(len(cat.SEDs)):
-            coll['data'].insert( {"index":i, "sed":cat.SEDs[i].tolist(), "errors":cat.full_errors[i].tolist(),\
-                                    "mode":cat.modes[i], "coords":cat.coords[i].tolist(), "models":int(cat.models[i])} )
+            coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i],\
+                                    "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
             json_list.append({ 'ra':cat.coords[i][0], 'dec':cat.coords[i][1], 'mode':cat.modes[i], 'phot':cat.SEDs[i].tolist(),\
                                'errors':cat.full_errors[i].tolist() })
         # return the catalog in either ascii or JSON
@@ -710,20 +756,25 @@ def api_handler():
             for row in data:
                 coll["requested_sources"].insert( {"ra":row[0], "dec":row[1] })
             
-            requested_coords = data[:,:2] #put ra,dec into numpy array for sake of functions below
+            requested_coords = data[:,:2].tolist()
             
             center, size = gs.find_field( requested_coords )
             cat = gs.catalog( center, max(size), input_coords=requested_coords )
             # match requested coords to returned sources
             matches,tmp = gs.identify_matches( requested_coords, cat.coords)
+            if type(cat.SEDs) != list:
+                cat.SEDs = cat.SEDs.tolist()
+                cat.full_errors = cat.full_errors.tolist()
+                cat.coords = cat.coords.tolist()
+            
             json_list = [ {'query_ID':session['sid']} ]
             i = 0
             for j,match in enumerate(matches):
                 if match >= 0:
-                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
-                                            "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
+                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match],\
+                                            "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
                     json_list.append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
-                                       'phot':cat.SEDs[match].tolist(), 'errors':cat.full_errors[match].tolist() })
+                                       'phot':cat.SEDs[match], 'errors':cat.full_errors[match] })
                     i +=1
             # return the catalog in either ascii or JSON
             if response_type == 'json':
@@ -748,14 +799,18 @@ def api_handler():
             for row in data:
                 coll["requested_sources"].insert( {"ra":row[0], "dec":row[1], "inst_mag":row[2] })
             
-            requested_coords = data[:,:2] #put ra,dec into numpy array for sake of functions below
-            inst_mags = data[:,2]
+            requested_coords = data[:,:2].tolist()
+            inst_mags = data[:,2].tolist()
             
             center, size = gs.find_field( requested_coords )
             cat = gs.catalog( center, max(size), input_coords=requested_coords )
+            if type(cat.SEDs) != list:
+                cat.SEDs = cat.SEDs.tolist()
+                cat.full_errors = cat.full_errors.tolist()
+                cat.coords = cat.coords.tolist()
             
             # pull out only the band we care about
-            mod_mags = np.array([ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ])
+            mod_mags = [ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ]
             
             # calculate zeropoint
             median_zp, mad_zp, matches, all_zps = gs.calc_zeropoint( requested_coords, cat.coords, inst_mags, mod_mags, return_zps=True)
@@ -767,10 +822,10 @@ def api_handler():
             i = 0
             for j,match in enumerate(matches):
                 if match >= 0:
-                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match].tolist(), "errors":cat.full_errors[match].tolist(),\
-                                            "mode":cat.modes[match], "coords":requested_coords[j].tolist(), "models":int(cat.models[match])} )
+                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match],\
+                                            "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
                     json_list.append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
-                                       'phot':cat.SEDs[match].tolist(), 'errors':cat.full_errors[match].tolist() })
+                                       'phot':cat.SEDs[match], 'errors':cat.full_errors[match] })
                     i +=1
             # return the catalog in either ascii or JSON
             if response_type == 'json':

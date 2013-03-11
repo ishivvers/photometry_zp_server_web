@@ -4,6 +4,7 @@ from PhotoZPE import app #the flask object itself, created by __init__.py
 import numpy as np
 from time import time, strftime
 import json
+import re
 import pymongo as pm
 from my_code import get_SEDs as gs #my library written to predict SEDs
 import xmlrpclib

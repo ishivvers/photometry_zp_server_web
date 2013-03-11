@@ -180,8 +180,8 @@ function update_text(sed_index, spec_id, ra, dec) {
 				if (reply[i].name=='spec_type') {
 					svg.append("text")
 					    .attr("class", "loading")
-					    .text(reply[i].value)
-					    .attr("x", function () { return width-50; })
+					    .text('Stellar type: '+reply[i].value)
+					    .attr("x", function () { return width-110; })
 					    .attr("y", 10 );
 					document.getElementById("bestfit").innerHTML = "Best-fit stellar type: "+reply[i].value;
 				}
@@ -249,7 +249,7 @@ var svg2 = d3.select("#overlay_hero").append("svg")
 
 // the background image of stars, from DSS image server
 svg2.append("image")
-	.attr("xlink:href", "http://archive.stsci.edu/cgi-bin/dss_search?v=all&r=" +
+	.attr("xlink:href", "http://archive.stsci.edu/cgi-bin/dss_search?v=3&r=" +
 		String(d3.round(field_center[0],8)) + "&d=" + String(d3.round(field_center[1],8)) + 
 		"&h=" + String(d3.round(field_width, 8)) + "&w=" + String(d3.round(field_width, 8)) + 
 		"&f=gif&c=none&fov=NONE&e=J2000")

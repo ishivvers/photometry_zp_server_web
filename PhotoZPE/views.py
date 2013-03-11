@@ -9,8 +9,22 @@ import pymongo as pm
 
 from sys import platform
 if 'linux' in platform.lower():
+    import xmlrpclib
     # startup the xml connection to beast
     gs = xmlrpclib.ServerProxy('http://beast.berkeley.edu:5555', allow_none=True)
+
+    # define a special class to handle xmlrpc weirdness
+    class special_dict(dict):
+        '''
+        A class that offers dictionary lookup through class attributes,
+         so that interaction over the xmlrpc server is the same as through
+         the local class.
+        '''
+        def __getattr__(self,name):
+            return self[name]
+        def __setattr__(self,name,value):
+            self[name] = value
+
 else:
     # import the local version
     from my_code import get_SEDs as gs
@@ -22,9 +36,8 @@ TO DO:
 
 ########################################################################
 # The below can stay as global variables, since they don't change across threads
-#  Central wavelength and zeropoint for all filters (zp in erg/s/cm^2/A )
-FILTER_PARAMS =  gs.FILTER_PARAMS
-ALL_FILTERS = np.array(gs.ALL_FILTERS)
+from my_code.get_SEDs import ALL_FILTERS, FILTER_PARAMS
+ALL_FILTERS = np.array(ALL_FILTERS)
 
 try:
     MODELS = np.load( app.root_path+'/static/spectra/all_models.npy' )
@@ -335,7 +348,7 @@ def show_results():
         coll = DB[ sid ]
         session['sid'] = sid
         # The gymnastics above are neccessary because of strange errors
-        #  when accessing the database wit a redefined session['sid'].
+        #  when accessing the database with a redefined session['sid'].
         #  I don't fully understand what was wrong before, and don't fully
         #  understand why this works.
     except:
@@ -379,14 +392,21 @@ def show_results():
         dec = search_field['dec']
         fs = search_field['fs']
         cat = gs.catalog( (ra,dec), fs ) #square box of size fs
-        # make sure all the types are consistent, whether we're using the beast or local calculations
-        if type(cat.SEDs) != list:
+
+        # handle differences in beast or local operation
+        if not app.config['BEAST_MODE']:
             cat.SEDs = cat.SEDs.tolist()
             cat.full_errors = cat.full_errors.tolist()
             cat.coords = cat.coords.tolist()
+        else:
+            cat = special_dict(cat)
+
+        # put into database
         for i in range(len(cat.SEDs)):
             coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i],\
                                     "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
+
+        # send to webpage
         coords = cat.coords[:max_disp]
         center, width, offsets = coords_to_offsets( coords )
         send_coords = []
@@ -408,12 +428,15 @@ def show_results():
         # match requested coords to returned sources
         matches,tmp = gs.identify_matches( requested_coords, cat.coords )
         
-        # make sure all the types are consistent, whether we're using the beast or local calculations
-        if type(cat.SEDs) != list:
+        # handle differences in beast or local operation
+        if not app.config['BEAST_MODE']:
             cat.SEDs = cat.SEDs.tolist()
             cat.full_errors = cat.full_errors.tolist()
             cat.coords = cat.coords.tolist()
+        else:
+            cat = special_dict(cat)
         
+        # put into database
         out_coords, out_model_indices = [],[]
         i = 0
         for j,match in enumerate(matches):
@@ -424,6 +447,7 @@ def show_results():
                 out_coords.append( requested_coords[j] )
                 i +=1
         
+        # send to webpage
         out_coords = np.array(out_coords[:max_disp])
         center, width, offsets = coords_to_offsets( out_coords )
         send_coords = []
@@ -444,11 +468,14 @@ def show_results():
         center, size = gs.find_field( requested_coords )
         cat = gs.catalog( center, max(size), input_coords=requested_coords )
         
-        # make sure all the types are consistent, whether we're using the beast or local calculations
-        if type(cat.SEDs) != list:
+        # handle differences in beast or local operation
+        if not app.config['BEAST_MODE']:
             cat.SEDs = cat.SEDs.tolist()
             cat.full_errors = cat.full_errors.tolist()
             cat.coords = cat.coords.tolist()
+        else:
+            cat = special_dict(cat)
+
         # pull out only the band we care about
         mod_mags = [ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ]
         
@@ -457,6 +484,7 @@ def show_results():
         coll.insert( {"entry":"zeropoint_estimate", "zp":median_zp, "mad":mad_zp} )
         for val in all_zps:
             coll['zeropoints'].insert( {"zp":val} )
+        
         # put into db
         out_coords, out_model_indices = [],[]
         i = 0
@@ -468,6 +496,7 @@ def show_results():
                 out_coords.append( requested_coords[j] )
                 i +=1
         
+        # send to webpage
         out_coords = np.array(out_coords[:max_disp])
         center, width, offsets = coords_to_offsets( out_coords )
         send_coords = []
@@ -487,6 +516,7 @@ def coords_to_offsets( coords ):
 	 field_width (in arcminutes) and
 	 offsets_from_center (in arcminutes)
     '''
+    coords = np.array(coords)
     edge = .5 # size to add to field edges in arcminutes
     
     r_c = np.deg2rad(min(coords[:,0]) + ( max(coords[:,0]) - min(coords[:,0]) )/2.)
@@ -706,10 +736,14 @@ def api_handler():
         coll.insert( {"entry":"mode", "mode":1} )
         coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":size} )
         cat = gs.catalog( (ra,dec), size )
-        if type(cat.SEDs) != list:
+
+        # handle differences in beast or local operation
+        if not app.config['BEAST_MODE']:
             cat.SEDs = cat.SEDs.tolist()
             cat.full_errors = cat.full_errors.tolist()
             cat.coords = cat.coords.tolist()
+        else:
+            cat = special_dict(cat)
 
         # put the catalog entries both into the database and into a response
         json_list = [ {'query_ID':session['sid']} ]
@@ -718,6 +752,7 @@ def api_handler():
                                     "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
             json_list.append({ 'ra':cat.coords[i][0], 'dec':cat.coords[i][1], 'mode':cat.modes[i], 'phot':cat.SEDs[i].tolist(),\
                                'errors':cat.full_errors[i].tolist() })
+        
         # return the catalog in either ascii or JSON
         if response_type == 'json':
             return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
@@ -755,18 +790,23 @@ def api_handler():
             coll.insert( {"entry":"mode", "mode":mode} )
             for row in data:
                 coll["requested_sources"].insert( {"ra":row[0], "dec":row[1] })
-            
             requested_coords = data[:,:2].tolist()
-            
+
             center, size = gs.find_field( requested_coords )
             cat = gs.catalog( center, max(size), input_coords=requested_coords )
+            
             # match requested coords to returned sources
             matches,tmp = gs.identify_matches( requested_coords, cat.coords)
-            if type(cat.SEDs) != list:
+    
+            # handle differences in beast or local operation
+            if not app.config['BEAST_MODE']:
                 cat.SEDs = cat.SEDs.tolist()
                 cat.full_errors = cat.full_errors.tolist()
                 cat.coords = cat.coords.tolist()
+            else:
+                cat = special_dict(cat)
             
+            # put into database
             json_list = [ {'query_ID':session['sid']} ]
             i = 0
             for j,match in enumerate(matches):
@@ -776,6 +816,7 @@ def api_handler():
                     json_list.append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
                                        'phot':cat.SEDs[match], 'errors':cat.full_errors[match] })
                     i +=1
+            
             # return the catalog in either ascii or JSON
             if response_type == 'json':
                 return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
@@ -804,10 +845,14 @@ def api_handler():
             
             center, size = gs.find_field( requested_coords )
             cat = gs.catalog( center, max(size), input_coords=requested_coords )
-            if type(cat.SEDs) != list:
+            
+            # handle differences in beast or local operation
+            if not app.config['BEAST_MODE']:
                 cat.SEDs = cat.SEDs.tolist()
                 cat.full_errors = cat.full_errors.tolist()
                 cat.coords = cat.coords.tolist()
+            else:
+                cat = special_dict(cat)
             
             # pull out only the band we care about
             mod_mags = [ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ]
@@ -817,6 +862,7 @@ def api_handler():
             coll.insert( {"entry":"zeropoint_estimate", "zp":median_zp, "mad":mad_zp} )
             for val in all_zps:
                 coll['zeropoints'].insert( {"zp":val} )
+            
             # put into database and into json or ascii format
             json_list = [ {'query_ID':session['sid'], 'median_zeropoint':median_zp, 'MAD_zeropoint':mad_zp} ]
             i = 0
@@ -827,6 +873,7 @@ def api_handler():
                     json_list.append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
                                        'phot':cat.SEDs[match], 'errors':cat.full_errors[match] })
                     i +=1
+            
             # return the catalog in either ascii or JSON
             if response_type == 'json':
                 return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')

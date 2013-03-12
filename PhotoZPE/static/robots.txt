@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /api/
+Disallow: /servespectrum/
+Disallow: /serveflams/
+Disallow: /servemags/
+Disallow: /servecatalog/
+Disallow: /servezp/

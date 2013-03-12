@@ -12,19 +12,6 @@ if 'linux' in platform.lower():
     import xmlrpclib
     # startup the xml connection to beast
     gs = xmlrpclib.ServerProxy('http://beast.berkeley.edu:5555', allow_none=True)
-
-    # define a special class to handle xmlrpc weirdness
-    class special_dict(dict):
-        '''
-        A class that offers dictionary lookup through class attributes,
-         so that interaction over the xmlrpc server is the same as through
-         the local class.
-        '''
-        def __getattr__(self,name):
-            return self[name]
-        def __setattr__(self,name,value):
-            self[name] = value
-
 else:
     # import the local version
     from my_code import get_SEDs as gs
@@ -36,8 +23,15 @@ TO DO:
 
 ########################################################################
 # The below can stay as global variables, since they don't change across threads
-from my_code.get_SEDs import ALL_FILTERS, FILTER_PARAMS
-ALL_FILTERS = np.array(ALL_FILTERS)
+ALL_FILTERS = ['u','g','r','i','z','y','B','V','R','I','J','H','K']
+# band: (central wavelength (AA), zeropoint (erg/s/cm^2/AA), catalog index)
+FILTER_PARAMS =  {'u': (3551., 8.6387e-9, 0), 'g': (4686., 4.9607e-9, 1),
+                  'r': (6165., 2.8660e-9, 2), 'i': (7481., 1.9464e-9, 3),
+                  'z': (8931., 1.3657e-9, 4), 'y': (10091., 1.0696e-9, 5),
+                  'B': (4400., 6.6000e-9, 6), 'V': (5490., 3.6100e-9, 7),
+                  'R':(6500., 2.1900e-9, 7),  'I': (7885., 1.1900e-9, 9),
+                  'J':(12350., 3.1353e-10, 10), 'H':(16620., 1.1121e-10, 11),
+                  'K':(21590., 4.2909e-11, 12)}
 
 try:
     MODELS = np.load( app.root_path+'/static/spectra/all_models.npy' )
@@ -60,6 +54,19 @@ DB = pm.MongoClient().PZserver
 
 # the maximum number of sources to show on the spectrum page (does not affect catalog download)
 max_disp = 300
+
+
+# define a special class to handle xmlrpc weirdness
+class special_dict(dict):
+    '''
+    A class that offers dictionary lookup through class attributes,
+     so that interaction over the xmlrpc server is the same as through
+     the local class.
+    '''
+    def __getattr__(self,name):
+        return self[name]
+    def __setattr__(self,name,value):
+        self[name] = value
 
 #######################################################################
 @app.route('/upload', methods=['GET', 'POST'])
@@ -95,51 +102,43 @@ def show_upload():
             coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":fs} )
             # and take them straight to the results
             return redirect(url_for('show_results'))
-            
-        elif mode == 2:
-            # produce matched catalog
+        
+        else:
+            # parse the uploaded file
             source_file = request.files["source_file"]
             if source_file and allowed_file(source_file.filename):
                 # try to parse with numpy
                 try:
-                    source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
-                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000] #only accept first 1000 sources
+                    fn = app.root_path + '/tmp/' + str(np.random.randint(9999)) + '.txt'
+                    source_file.save( fn )
+                    data = np.loadtxt( fn )[:1000] #only accept first 1000 sources
                 except:
                    return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
                                                             "is a properly-formatted ASCII file.")
             else:
                 return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
                                                             "is a properly-formatted ASCII file that ends in .txt.")
-            # if all's good, create the collection and populate it
-            coll = create_collection()
-            coll.insert( {"entry":"mode", "mode":mode} )
-            for row in data:
-                coll["requested_sources"].insert( {"ra":row[0], "dec":row[1] })
-            # have the user check that the file uploaded correctly
-            return render_template( "upload.html", mode=mode, data=data[:5] )
-        elif mode == 3:
-            # produce matched catalog and zeropoint estimate
-            source_file = request.files["source_file"]
-            if source_file and allowed_file(source_file.filename):
-                # try to parse with numpy
-                try:
-                    source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
-                    data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000]  #only accept first 1000 sources
-                except:
-                    return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                            "is a properly-formatted ASCII file.")
-            else:
-                return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
-                                                            "is a properly-formatted ASCII file that ends in .txt.")
-            # if all's good, create the collection and populate it
-            band = request.form["band"]
-            coll = create_collection()
-            coll.insert( {"entry":"mode", "mode":mode} )
-            coll.insert( {"entry":"passband", "passband":band} )
-            for row in data:
-                coll["requested_sources"].insert( {"ra":row[0], "dec":row[1], "inst_mag":row[2] })
-            # have the user check that the file uploaded correctly
-            return render_template( "upload.html", mode=mode, data=data[:5], band=band )
+            
+            if mode == 2:
+                # create matched catalog
+                # if all's good, create the collection and populate it
+                coll = create_collection()
+                coll.insert( {"entry":"mode", "mode":mode} )
+                for row in data:
+                    coll["requested_sources"].insert( {"ra":row[0], "dec":row[1] })
+                # have the user check that the file uploaded correctly
+                return render_template( "upload.html", mode=mode, data=data[:5] )
+            elif mode == 3:
+                # produce matched catalog and zeropoint estimate
+                # if all's good, create the collection and populate it
+                band = request.form["band"]
+                coll = create_collection()
+                coll.insert( {"entry":"mode", "mode":mode} )
+                coll.insert( {"entry":"passband", "passband":band} )
+                for row in data:
+                    coll["requested_sources"].insert( {"ra":row[0], "dec":row[1], "inst_mag":row[2] })
+                # have the user check that the file uploaded correctly
+                return render_template( "upload.html", mode=mode, data=data[:5], band=band )
 
 
 ## show_upload() helper functions
@@ -423,10 +422,7 @@ def show_results():
             requested_coords.append( [obj['ra'], obj['dec']] )
         
         center, size = gs.find_field( requested_coords )
-        cat = gs.catalog( center, max(size), input_coords=requested_coords )
-        
-        # match requested coords to returned sources
-        matches,tmp = gs.identify_matches( requested_coords, cat.coords )
+        cat = gs.catalog( center, max(size), requested_coords )
         
         # handle differences in beast or local operation
         if not app.config['BEAST_MODE']:
@@ -435,6 +431,9 @@ def show_results():
             cat.coords = cat.coords.tolist()
         else:
             cat = special_dict(cat)
+
+        # match requested coords to returned sources
+        matches,tmp = gs.identify_matches( requested_coords, cat.coords )
         
         # put into database
         out_coords, out_model_indices = [],[]
@@ -466,7 +465,7 @@ def show_results():
             inst_mags.append( obj['inst_mag'] )
         
         center, size = gs.find_field( requested_coords )
-        cat = gs.catalog( center, max(size), input_coords=requested_coords )
+        cat = gs.catalog( center, max(size), requested_coords )
         
         # handle differences in beast or local operation
         if not app.config['BEAST_MODE']:
@@ -477,10 +476,11 @@ def show_results():
             cat = special_dict(cat)
 
         # pull out only the band we care about
-        mod_mags = [ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ]
+        iband = ALL_FILTERS.index(band)
+        mod_mags = [ sss[ iband ] for sss in cat.SEDs ]
         
         # calculate zeropoint
-        median_zp, mad_zp, matches, all_zps = gs.calc_zeropoint( requested_coords, cat.coords, inst_mags, mod_mags, return_zps=True)
+        median_zp, mad_zp, matches, all_zps = gs.calc_zeropoint( requested_coords, cat.coords, inst_mags, mod_mags )
         coll.insert( {"entry":"zeropoint_estimate", "zp":median_zp, "mad":mad_zp} )
         for val in all_zps:
             coll['zeropoints'].insert( {"zp":val} )
@@ -688,7 +688,7 @@ def serve_full_catalog():
 def serve_zeropoints():
     '''
     Loads and returns zeropoint estimates as inserted into the database by results page.
-    Needs database key (given as url?key=value).
+    Needs database key.
     '''
     coll = DB[ session['sid'] ]
     curs = coll['zeropoints'].find()
@@ -750,8 +750,8 @@ def api_handler():
         for i in range(len(cat.SEDs)):
             coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i],\
                                     "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
-            json_list.append({ 'ra':cat.coords[i][0], 'dec':cat.coords[i][1], 'mode':cat.modes[i], 'phot':cat.SEDs[i].tolist(),\
-                               'errors':cat.full_errors[i].tolist() })
+            json_list.append({ 'ra':cat.coords[i][0], 'dec':cat.coords[i][1], 'mode':cat.modes[i], 'phot':cat.SEDs[i],\
+                               'errors':cat.full_errors[i] })
         
         # return the catalog in either ascii or JSON
         if response_type == 'json':
@@ -774,8 +774,9 @@ def api_handler():
         if source_file and allowed_file(source_file.filename):
             # try to parse with numpy
             try:
-                source_file.save( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )
-                data = np.loadtxt( app.config['UPLOAD_FOLDER'] + 'tmp_source.txt' )[:1000] #only accept first 1000 sources
+                fn = app.root_path + '/tmp/' + str(np.random.randint(9999)) + '.txt' 
+                source_file.save( fn )
+                data = np.loadtxt( fn )[:1000] #only accept first 1000 sources
             except:
                 return Response( '{ success:false, message:"Uploaded file incorrectly formatted."}',
                                 mimetype='application/json')
@@ -793,11 +794,8 @@ def api_handler():
             requested_coords = data[:,:2].tolist()
 
             center, size = gs.find_field( requested_coords )
-            cat = gs.catalog( center, max(size), input_coords=requested_coords )
+            cat = gs.catalog( center, max(size), requested_coords )
             
-            # match requested coords to returned sources
-            matches,tmp = gs.identify_matches( requested_coords, cat.coords)
-    
             # handle differences in beast or local operation
             if not app.config['BEAST_MODE']:
                 cat.SEDs = cat.SEDs.tolist()
@@ -806,6 +804,9 @@ def api_handler():
             else:
                 cat = special_dict(cat)
             
+            # match requested coords to returned sources
+            matches,tmp = gs.identify_matches( requested_coords, cat.coords)
+
             # put into database
             json_list = [ {'query_ID':session['sid']} ]
             i = 0
@@ -844,7 +845,7 @@ def api_handler():
             inst_mags = data[:,2].tolist()
             
             center, size = gs.find_field( requested_coords )
-            cat = gs.catalog( center, max(size), input_coords=requested_coords )
+            cat = gs.catalog( center, max(size), requested_coords )
             
             # handle differences in beast or local operation
             if not app.config['BEAST_MODE']:
@@ -855,10 +856,11 @@ def api_handler():
                 cat = special_dict(cat)
             
             # pull out only the band we care about
-            mod_mags = [ sss[ ALL_FILTERS==band ] for sss in cat.SEDs ]
+            iband = ALL_FILTERS.index(band)
+            mod_mags = [ sss[ iband ] for sss in cat.SEDs ]
             
             # calculate zeropoint
-            median_zp, mad_zp, matches, all_zps = gs.calc_zeropoint( requested_coords, cat.coords, inst_mags, mod_mags, return_zps=True)
+            median_zp, mad_zp, matches, all_zps = gs.calc_zeropoint( requested_coords, cat.coords, inst_mags, mod_mags )
             coll.insert( {"entry":"zeropoint_estimate", "zp":median_zp, "mad":mad_zp} )
             for val in all_zps:
                 coll['zeropoints'].insert( {"zp":val} )

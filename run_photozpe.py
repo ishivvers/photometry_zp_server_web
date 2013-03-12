@@ -1,4 +1,3 @@
-#!/usr/local/bin/Enthought/epd-7.3-1-rh5-x86_64/bin/python
 '''
 Run our server!
 To have this visible from outside, make sure you map port 80 to 5555,
@@ -9,17 +8,19 @@ from PhotoZPE import app
 from sys import platform
 
 # the flask run command provides the best mechanism for debugging
-app.run(debug=True)
+#app.run(debug=True)
 
 if __name__ == '__main__':
     from tornado.wsgi import WSGIContainer
     from tornado.httpserver import HTTPServer
     from tornado.ioloop import IOLoop
+
+    
+    ## main logging enabled for the nginx proxy, not the tornado server ##
+    ## uncomment the below for debug-level logging in photo_zpe.log ##
+    '''
     from tornado import options
     from time import strftime
-    
-    '''
-    ## logging enabled for the nginx proxy, not the tornado server ##
     # log to text files
     import logging        
     log = logging.getLogger()

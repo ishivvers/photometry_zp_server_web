@@ -97,7 +97,7 @@ def show_upload():
             except:
                 return render_template( "upload.html", feedback="Could not interpret input - please enter valid coordinates "+\
                                                                 "in decimal degrees or sexagesimal (HH:MM:SS.S, DD:MM:SS.S), "+\
-                                                                "and make sure the requested field is MAX_FIELD arcseconds or smaller.")
+                                                                "and make sure the requested field is {} arcseconds or smaller.".format(MAX_FIELD))
             if not (0. <= ra <= 360.) or not (-90. <= dec <= 90.) or not (0. <= fs <= MAX_FIELD):
                 return render_template( "upload.html", feedback="Coordinates or field size beyond limits.")
             # if all's good, create the collection and populate it

@@ -11,10 +11,17 @@ from sys import platform
 #app.run(debug=True)
 
 if __name__ == '__main__':
+    from sys import argv
     from tornado.wsgi import WSGIContainer
     from tornado.httpserver import HTTPServer
     from tornado.ioloop import IOLoop
-
+    
+    # will increment port by any integer passed as first cl argument
+    port = 5000
+    try:
+        port += int(argv[1])
+    except:
+        pass
     
     ## main logging enabled for the nginx proxy, not the tornado server ##
     ## uncomment the below for debug-level logging in photo_zpe.log ##
@@ -31,5 +38,5 @@ if __name__ == '__main__':
 
     # start the server and let her run
     http_server = HTTPServer(WSGIContainer(app))
-    http_server.listen(5555)
+    http_server.listen( port )
     IOLoop.instance().start()

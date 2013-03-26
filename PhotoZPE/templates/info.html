@@ -13,13 +13,12 @@
 		  and the standard photometric systems of <a target="_blank" href="http://www.sdss.org/">SDSS</a>, 
 	 	  <a target="_blank" href="http://tdc-www.harvard.edu/catalogs/ub1.html">USNOB1</a>, and 
  	      <a target="_blank" href="http://www.ipac.caltech.edu/2mass/overview/about2mass.html">2-MASS</a>.
-		  This site cross-matches observations from the SDSS catalog 
+		  We do this by cross-matching sources from the 2-MASS catalog to sources in the SDSS catalog 
 		  (if within <a target="_blank" href="http://www.sdss.org/dr7/coverage/">the SDSS footprint</a>)
-		  or from the all-sky USNO-B1 catalog to sources in the all-sky 2-MASS catalog,
-		  determines (for each source) a best-fit stellar type from the
+		  or the all-sky USNO-B1 catalog, determining (for each source) a best-fit stellar spectrum from the
 		  <a target="_blank" href="http://www.stsci.edu/hst/observatory/cdbs/pickles_atlas.html">Pickles Stellar Atlas</a>,
-		  and produces synthetic photometry to augment the measured photometry of the catalogs. These photometric estimates
-		  can be used to calculate a systematic offset between observed magnitudes (e.g. the instrumental
+		  and producing synthetic photometry to augment the observed photometry in the catalogs. These photometric estimates
+		  can then be used on a per-source basis or used to calculate a systematic offset between observed magnitudes (e.g. the instrumental
 		  magnitudes generated through photometry on images) and the true magnitudes for a set of observations;
 		  i.e. the photometric zeropoint.  Note: <i>u, g, r, i, z</i> &amp; <i>y</i> photometry are reported as AB magnitudes,
 		  while <i>J, H, K, B, V, R</i> &amp; <i>I</i> are Vega magnitudes.
@@ -27,13 +26,13 @@
 
 	  <hr>	
 	  <h2>Characteristic Errors</h2>
-	   <p>Though the estimates for individual sources can, at worst, be off by as much
-		  as .5 mag, we have worked to get the median offset for any ensemble of
+	   <p>Though the estimates for individual sources can, at worst, have errors as large
+		  as 0.5 mag or more, we have worked to get the median offset for any ensemble of
 		  sources as close to zero as possible to facilitate accurate zeropoint determinations.
 		  For any field with more than a few tens of sources, the systematic errors dominate
 		  over statistical errors, and so we provide two important measurements of error: the photometric
 		  error for each individual source (reported on the Results page and in downloaded catalogs)
-		  and a systematic error of the zeropoint of a field for each passband, reported below.
+		  and a systematic error of the median of a field for each passband, reported below.
 		  The following discussion assumes a Gaussian error distribution, and all reported errors
 		  represent deviations of 1-&sigma;.  Our error estimates make use of data from
   		  <a target="_blank" href="http://www.ukidss.org/">UKIDSS</a> and the 
@@ -62,7 +61,7 @@
 		  <strong>Inside the SDSS footprint (reported as mode 0).</strong><br>
 		  The errors below are compiled
 		  from a set of 5 arbitrary 1.0&deg; fields in the SDSS Stripe 82 footprint, modeled using SDSS and 2-MASS
-		  observations. The SDSS and 2-MASS photometry that informs these models is quite well-calibrated
+		  observations. The SDSS and 2-MASS photometry that informs these models is well-calibrated
 		  across fields, and so the systematic errors within the SDSS footprint are small.
 		
 		<div class="row-fluid">
@@ -172,7 +171,7 @@
 				<li><b>mode:</b> 1</li>
 				<li><b>ra:</b> RA in decimal degrees</li>
 				<li><b>dec:</b> DEC in decimal degrees</li>
-				<li><b>size:</b> Field Size in arcseconds (max: 7200" or 2&deg;)</li>
+				<li><b>size:</b> Field size in arcseconds (max: 3600")</li>
 			  </ul>
 		  <strong>Optional:</strong>
 		  <ul>
@@ -190,7 +189,7 @@
 			  <strong>Required:</strong>
 			  <ul>
 				<li><b>mode:</b> 2</li>
-				<li><b>posted file</b></li>
+				<li><b>posted star list</b> (total size &lt; 3600")</li>
 			  </ul>
 			  <strong>Optional:</strong>
 			  <ul>
@@ -209,7 +208,7 @@
 			  <ul>
 				<li><b>mode:</b> 3</li>
 				<li><b>band:</b> Passband of observations</li>
-				<li><b>posted file</b></li>
+				<li><b>posted star list</b> (total size &lt; 3600")</li>
 			  </ul>
 			  <strong>Optional:</strong>
 			  <ul>

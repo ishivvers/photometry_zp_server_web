@@ -16,10 +16,6 @@ else:
     # import the local version
     from my_code import get_SEDs as gs
 
-'''
-TO DO:
- - have nice error pages
-'''
 
 ########################################################################
 # The below can stay as global variables, since they don't change across threads
@@ -53,7 +49,7 @@ except:
 DB = pm.MongoClient().PZserver
 
 # the maximum number of sources to show on the spectrum page (does not affect catalog download)
-MAX_DISP = 300
+MAX_DISP = 500
 # the maximum field size to allow
 MAX_FIELD = 3600.
 

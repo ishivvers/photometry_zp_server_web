@@ -4,7 +4,7 @@ from PhotoZPE import app #the flask object itself, created by __init__.py
 import numpy as np
 from time import time, strftime
 import json
-import re
+import re, os
 import pymongo as pm
 
 from sys import platform
@@ -29,8 +29,11 @@ FILTER_PARAMS =  {'u': (3551., 8.6387e-9, 0), 'g': (4686., 4.9607e-9, 1),
                   'J':(12350., 3.1353e-10, 10), 'H':(16620., 1.1121e-10, 11),
                   'K':(21590., 4.2909e-11, 12)}
 
+# note, cannot put spectra folder in an app.config entry because 
+#  the app hasn't yet been configured when this stuff is imported
+spectra_folder = '/static/spectra/'
 try:
-    MODELS = np.load( app.root_path+'/static/spectra/all_models.npy' )
+    MODELS = np.load( app.root_path+spectra_folder+'all_models.npy' )
 except:
     raise IOError('cannot find models file')
 # convert the MODELS np array into a dictionary of arrays, so we can call by index (faster)
@@ -40,9 +43,25 @@ for model in MODELS[1:]:
 del(MODELS) #just to free memory
 
 try:
-    SPEC_TYPES = np.loadtxt( app.root_path+'/static/spectra/pickles_types.txt', dtype=str )
+    SPEC_TYPES = np.loadtxt( app.root_path+spectra_folder+'pickles_types.txt', dtype=str )
 except:
     raise IOError('cannot find spectral types file')
+
+# SPEC_DICT contains all Pickles spectra in FLAM, as well as one array of lambda (Angstrom)
+SPEC_DICT = {}
+try:
+    spec_files = os.listdir( app.root_path+spectra_folder )
+    for fn in spec_files:
+        try:
+            n = int( re.findall('\d+', fn)[0] )
+        except:
+            continue
+        data = np.load( app.root_path+spectra_folder+fn )
+        SPEC_DICT[n] = data[1]
+        if n == 1:
+            SPEC_DICT['lam'] = data[0]
+except:
+    raise IOError('cannot find spectra files')
     
 
 # initialize the database
@@ -602,10 +621,8 @@ def serve_spectrum():
     '''
     spec = int(request.args.get('spec',''))
     sed_index = int(request.args.get('index',''))
-    f = app.config['SPECTRA_FOLDER']+'pickles_uk_{}.npy'.format(spec)
-    dat = np.load( f )
     # truncate the data below 2500AA    
-    wl = dat[0][ dat[0]>2500 ] #Angstroms
+    wl = SPEC_DICT['lam'][ SPEC_DICT['lam']>2500 ] #Angstroms
     
     # now match the model spectrum to the SED, using the Y-band
     #  to match (since Y will always be modeled)
@@ -617,7 +634,8 @@ def serve_spectrum():
     y_model_flam = mag2flam( [MODELS_DICT[spec][5]], ['y'] ) #need to be array-like
     #D is the multiplier needed to make the model mesh with the fitted model
     D = sed_flam[5]/y_model_flam
-    spec = D*dat[1][ dat[0]>2500 ]
+    
+    spec = D*SPEC_DICT[spec][ SPEC_DICT['lam']>2500 ]
     
     # push data into a json-able format: a list of dictionaries
     json_list = [{'x': wl[i], 'y': spec[i]} for i in range(len(wl))]

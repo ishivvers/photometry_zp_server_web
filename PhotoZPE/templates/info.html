@@ -7,115 +7,161 @@
   <div class="row-fluid">
 	<div class="span12">
       <div class="hero-unit">
-	  <h3>Photometric Estimates</h3>
+	  <h2>Photometric Estimates</h2>
 	   <p>This site was designed to produce accurate estimates of the 
 		  photometric zeropoint between a set of observations (instrumental magnitudes)
 		  and the standard photometric systems of <a target="_blank" href="http://www.sdss.org/">SDSS</a>, 
 	 	  <a target="_blank" href="http://tdc-www.harvard.edu/catalogs/ub1.html">USNOB1</a>, and 
  	      <a target="_blank" href="http://www.ipac.caltech.edu/2mass/overview/about2mass.html">2-MASS</a>.
-		  To do this, I pull observations from the SDSS catalog 
+		  This site cross-matches observations from the SDSS catalog 
 		  (if within <a target="_blank" href="http://www.sdss.org/dr7/coverage/">the SDSS footprint</a>)
-		  or from the all-sky USNO-B1 catalog, cross-match to sources in the all-sky 2-MASS catalog,
-		  and fit a model spectra from the 
-		  <a target="_blank" href="http://www.stsci.edu/hst/observatory/cdbs/pickles_atlas.html">Pickles Stellar Atlas</a>
-		  to each source. This produces an estimate for the spectrum for each individual source,
-		  from which I obtain synthetic photometry for all requested bands. These photometric estimates
-		  can safely be used to calculate a systematic offset between observed magnitudes (e.g. the instrumental
+		  or from the all-sky USNO-B1 catalog to sources in the all-sky 2-MASS catalog,
+		  determines (for each source) a best-fit stellar type from the
+		  <a target="_blank" href="http://www.stsci.edu/hst/observatory/cdbs/pickles_atlas.html">Pickles Stellar Atlas</a>,
+		  and produces synthetic photometry to augment the measured photometry of the catalogs. These photometric estimates
+		  can be used to calculate a systematic offset between observed magnitudes (e.g. the instrumental
 		  magnitudes generated through photometry on images) and the true magnitudes for a set of observations;
 		  i.e. the photometric zeropoint.  Note: <i>u, g, r, i, z</i> &amp; <i>y</i> photometry are reported as AB magnitudes,
 		  while <i>J, H, K, B, V, R</i> &amp; <i>I</i> are Vega magnitudes.
 	   </p>
 
 	  <hr>	
-	  <h3>Characteristic Errors</h3>
+	  <h2>Characteristic Errors</h2>
 	   <p>Though the estimates for individual sources can, at worst, be off by as much
-		  as .5 mag, I have worked to get the median offset for any ensemble of
-		  sources as close to zero as possible. This works much better for central bands
-		  (<i>i, z, y</i>) than the bluer bands. Within our group, we use this system to
-		  estimate <i>y</i>-band zeropoints - please be aware of the errors and limitations if you
-		  use this for blue bands as well!<br>
+		  as .5 mag, we have worked to get the median offset for any ensemble of
+		  sources as close to zero as possible to facilitate accurate zeropoint determinations.
+		  For any field with more than a few tens of sources, the systematic errors dominate
+		  over statistical errors, and so we provide two important measurements of error: the photometric
+		  error for each individual source (reported on the Results page and in downloaded catalogs)
+		  and a systematic error of the zeropoint of a field for each passband, reported below.
+		  The following discussion assumes a Gaussian error distribution, and all reported errors
+		  represent deviations of 1-&sigma;.  Our error estimates make use of data from
+  		  <a target="_blank" href="http://www.ukidss.org/">UKIDSS</a> and the 
+		  <a target="_blank" href="http://www2.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/community/STETSON/standards/">Stetson standard star fields</a>,
+		  in addition to SDSS, USNO-B1, and 2-MASS photometry.
+		  Note that the errors are much smaller for mid-optical bands
+		  (<i>i, z, y, I</i>) than the bluer bands - please be aware of the errors at the blue end!<br>
 		
+		<h3>Single-source Errors</h3>
+		 <p>The per-passband errors for each source were determined by producing a modeled catalog
+			for fields with published photometry and comparing the estimated photometry
+			to observed photometry for each source, assuming published measurement errors are negligible compared
+			to modeling errors. The 1-&sigma; error for each passband was averaged over several fields 
+			and parameterized as a function of model fit &chi;<sup>2</sup>.  That parameterization
+			is then used to estimate the error for any model as a function of &chi;<sup>2</sup>.
+			
+			Errors in modeled <i>u, g, r, i, z, y</i> were determined by comparing SDSS, UKIDSS, and modeled photometry
+			for five arbitrary 1.0&deg; fields in the SDSS Stripe 82 footprint (see plots below for field centers).
+			
+			Errors in modeled <i>B, V, R, I</i> were determined by comparing modeled photometry to Stetson photometry
+			in five fields within SDSS Stripe 82, chosen for their size (L112, L113, L92, L95, PG0231).
+		</p>
 		
-		  <strong>Inside the SDSS footprint (mode 0).</strong> The errors below are compiled
-		  from a set of 5 arbitrary 0.5&deg;-fields in the SDSS Stripe 82 footprint, modeled using SDSS and 2-MASS
-		  observations.  When compared to <a target="_blank" href="http://www.ukidss.org/">UKIDSS</a>
-		  photometry, the <i>y</i> band estimates display a characteristic median offset of <b>0.02</b> mags,
-		  with a median absolute deviation of <b>0.07</b> mags.  When compared to 
-		  <a target="_blank" href="http://www.aavso.org/apass">APASS</a> photometry, the <i>V</i> and <i>B</i>
-		  bands both display characteristic median offsets of <b>0.03</b>, with median absolute
-		  deviations of <b>0.09</b> and <b>0.13</b> respectively (though <i>I</i> and <i>R</i> were not
-		  examined, their errors should be quite similar).
-		  <div class="row-fluid">
-			<div class="span10 offset1 pagination-centered">
-			  <img src="static/img/sdss_ukidss_errs_y.png" width=400 height=400 alt="y error histogram">
-			  <img src="static/img/sdss_apass_errs_V.png" width=400 height=400 alt="V error histogram">
-			  <p small>Histograms of the differences between modeled and observed <i>y</i> and <i>V</i> 
-				magnitudes for sources in 5 arbitrary fields, as estimated with
-				SDSS observations and 2-MASS.  Each histogram displays sources within a 0.5&deg; box
-				around the listed RA and DEC.</p>
-			</div><!--/span-->
-		  </div><!--/row-->
-		<br>
-		  <strong>Outside the SDSS footprint (mode 1).</strong><br>  The characteristic errors below are compiled
-		  from the same five fields as above, but modeled using USNO-B1 and 2-MASS observations.
-		  The <i>y</i> band comes from cross-matches between modeled photometry and
-		  UKIDSS, the <i>V</i> band comes from comparisons with APASS,
-		  and the other bands from comparisons with SDSS photometry. Though no
-		  direct comparison was made for <i>I</i> band, the characteristic errors are probably
-		  similar to those for <i>V</i>.
+		<h3>Field-wide Systematic Errors</h3>
+		
+		  <strong>Inside the SDSS footprint (reported as mode 0).</strong><br>
+		  The errors below are compiled
+		  from a set of 5 arbitrary 1.0&deg; fields in the SDSS Stripe 82 footprint, modeled using SDSS and 2-MASS
+		  observations. The SDSS and 2-MASS photometry that informs these models is quite well-calibrated
+		  across fields, and so the systematic errors within the SDSS footprint are small.
+		
 		<div class="row-fluid">
 			<div class="span6 offset3">
 				<br>
-		  <table class="table table-condensed">
+		  <table class="table table-condensed table-center">
 			<tr><td><b>Band</b></td>
-				<td><b>Offset of the Median (mag)</b></td>
-				<td><b>Median Absolute Deviation (mag)</b></td></tr>
+				<td><b>1-&sigma; error of the Median (mag)</b></td>
+				<td><b>Photometry Source</b></td></tr>
 			<tr><td>y</td>
 				<td>0.03</td>
-				<td>0.12</td></tr>
-			<tr><td>z</td>
+				<td>UKIDSS</td></tr>
+			<tr><td>I</td>
+				<td>0.03</td>
+				<td>Stetson</td></tr>
+			<tr><td>R</td>
 				<td>0.05</td>
-				<td>0.15</td></tr>
-			<tr><td>i</td>
-				<td>0.09</td>
-				<td>0.14</td></tr>
-			<tr><td>r</td>
-				<td>0.17</td>
-				<td>0.12</td></tr>
-			<tr><td>g</td>
-				<td>0.26</td>
-				<td>0.18</td></tr>
-			<tr><td>u</td>
-				<td>0.27</td>
-				<td>0.32</td></tr>
+				<td>Stetson</td></tr>
 			<tr><td>V</td>
-				<td>0.19</td>
-				<td>0.08</td></tr>
+				<td>0.07</td>
+				<td>Stetson</td></tr>
+			<tr><td>B</td>
+				<td>0.07</td>
+				<td>Stetson</td></tr>
+		  </table>
+			</div><!--/span-->
+		</div><!--/row-->
+		  <div class="row-fluid">
+			<div class="span10 offset1 pagination-centered">
+			  <img src="static/img/sdss_ukidss_errs_hist_y.png" width=400 height=400 alt="y error histogram">
+			  <img src="static/img/sdss_stetson_errs_hist_I.png" width=400 height=400 alt="I error histogram">
+			  <p small>Histograms of the differences between modeled and observed <i>y</i> and <i>I</i> 
+				magnitudes for sources in 5 arbitrary fields and models using SDSS and 2-MASS observations.</p>
+			</div><!--/span-->
+		  </div><!--/row-->
+
+		<br>
+		  <strong>Outside the SDSS footprint (reported as mode 1).</strong><br>
+		  The errors below are compiled
+		  from the same five fields as above (for <i>u, g, r, i, z, y</i>) and from Stetson standard fields 
+		  (for <i>V, I</i>), but modeled using USNO-B1 and 2-MASS observations. Systematic errors between
+		  fields can be quite large in the USNO-B1 catalog, which is reflected in the significantly higher
+		  errors reported for sources outside of the SDSS footprint.
+		<div class="row-fluid">
+			<div class="span6 offset3">
+				<br>
+		  <table class="table table-condensed table-center">
+			<tr><td><b>Band</b></td>
+				<td><b>1-&sigma; error of the Median (mag)</b></td>
+				<td><b>Photometry Source</b></td></tr>
+			<tr><td>y</td>
+				<td>0.03</td>
+				<td>UKIDSS</td></tr>
+			<tr><td>z</td>
+				<td>0.07</td>
+				<td>SDSS</td></tr>
+			<tr><td>i</td>
+				<td>0.12</td>
+				<td>SDSS</td></tr>
+			<tr><td>r</td>
+				<td>0.18</td>
+				<td>SDSS</td></tr>
+			<tr><td>g</td>
+				<td>0.30</td>
+				<td>SDSS</td></tr>
+			<tr><td>u</td>
+				<td>0.34</td>
+				<td>SDSS</td></tr>
+			<tr><td>I</td>
+				<td>0.10</td>
+				<td>Stetson</td></tr>
+			<tr><td>V</td>
+				<td>0.24</td>
+				<td>Stetson</td></tr>
 	      </table>
 	     </div><!--/span-->
 		</div><!--/row-->
 		  <div class="row-fluid">
 			<div class="span10 offset1 pagination-centered">
-			  <img src="static/img/no_sdss_ukidss_errs_y.png" width=400 height=400 alt="y error histogram">
-			  <img src="static/img/sdss_errs_z.png" width=400 height=400 alt="z error histogram">
-			  <p>Histograms of the differences between predicted and true values for <i>y</i> and
-				<i>z</i> magnitudes for sources in 5 arbitrary fields, as estimated by
-				the USNO-B1 and	2-MASS observations.  Each histogram displays sources within a 0.5&deg; box
-				around the listed RA and DEC.</p>
+			  <img src="static/img/nosdss_ukidss_errs_hist_y.png" width=400 height=400 alt="y error histogram">
+			  <img src="static/img/sdss_errs_hist_z.png" width=400 height=400 alt="z error histogram">
+			  <img src="static/img/nosdss_stetson_errs_hist_I.png" width=400 height=400 alt="I error histogram">
+			  <p>Histograms of the differences between predicted and true values for <i>y</i>,
+				<i>z</i>, and <i>I</i> magnitudes for sources in 5 arbitrary fields and modeled
+				using USNO-B1 and 2-MASS observations. </p>
 			</div><!--/span-->
 		</div><!--/row-->
 		<!-- Insert discussion of built-in errors with SDSS/USNOB1/APASS -->
 		
 		<a name="api"></a><hr>
-		<h3>API</h3>
+		<h2>API</h2>
 		<p>
-		  This site offers an API as a webservice, so you can run queries from the commandline
-		  or within a script.  Requests are sent as a URL over HTTP, and the results can be obtained
+		  This site offers an API as a webservice, so you can run interact with it programatically.
+		  Requests are sent as a URL over HTTP, and the results can be obtained
 		  in either JSON or a simple ASCII table format.  The same three modes of operation are available
 		  through the API as through the main website, and the website interface can be used to examine
 		  the results of any API request made within the last day.  Any posted files must be simple ASCII 
-		  tables, with the first two columns RA and DEC (decimal degrees), and a third column of instrumental
-		  magnitudes if using mode 3.
+		  tables, with the first two columns RA and Dec (decimal degrees), and a third column of instrumental
+		  magnitudes (if using mode 3).
 		</p>
 		<div class="row-fluid">
 		  <div class="span10 offset1">
@@ -186,7 +232,7 @@
 		</div><!--/row-->
 		<div class="row-fluid">
 		<hr>
-		<h3>Open-Source Development</h3>
+		<h2>Open-Source Development</h2>
 		<p>
 		  This project uses a bunch of awesome open-source software and web development tools:
 		  <ul>
@@ -204,7 +250,7 @@
 		  <i>ishivvers (at) astro (dot) berkeley (dot) edu</i>
 		</p>
 		<hr>
-		<h3>Affiliations &amp; Acknowledgements</h3>
+		<h2>Affiliations &amp; Acknowledgements</h2>
 		<p> Codebase and site developed by <a target="_blank" href="http://astro.berkeley.edu/~ishivvers/">Isaac Shivvers</a>
 			 at UC Berkeley, with generous help and advice from everyone at the Center for Time Domain Informatics (Josh Bloom, Adam Morgan,
 			 Adam Miller, Chris Klein, Brad Cenko, Ori Fox, Dan Starr, Joey Richards), and a huge thanks to Bill Boyd for computational

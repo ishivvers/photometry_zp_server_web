@@ -8,10 +8,12 @@
 	<div class="span12">
       <div class="hero-unit">
 		<h3>Welcome to PhotoZPE, the All-Sky Photometric Zeropoint Estimation Engine.</h3>
-		<p> This site uses a set of catalogs, together covering the entire sky,
-			along with synthetic photometry of standard spectra
-			to produce estimated photometry in missing bands, returning
-			observations or estimates for <i>u, g, r, i, z, y, B, V, R, I, J, H</i> &amp; <i>K</i> passbands.<br>
+		<p> This site uses a set of catalogs along with synthetic photometry 
+			of standard spectra fit to the catalog photometry (for missing bands)
+			to produce photometric observations or estimates of sources across the entire sky
+			in <i>u, g, r, i, z, y, B, V, R, I, J, H</i> &amp; <i>K</i> passbands. The main
+			goal of this site is to provide a robust and simple way to estimate photometric 
+			zeropoints of an astronomical image for any band in any part of the sky.<br>
 			Please read the <a href="{{ url_for('show_info') }}">info page</a> for
 			a complete description, a discussion of errors,	and a few examples. <br><br>
 		
@@ -26,7 +28,7 @@
 				<div class="span6 offset3">
 				<strong>Usage:</strong>
 				<p>Enter an RA and DEC, in decimal degrees, and field size
-					in arcseconds. Note: maximum field size is 2&deg; (7200"), and
+					in arcseconds. Note: maximum field size is 1&deg; (3600"), and
 					large requests may take up to a minute to process.</p>
 				<form class="form-inline" method="POST">
 				  <input type="text" name="RA" class="input-small" placeholder="RA (&deg;)">
@@ -44,7 +46,7 @@
 			<div class="row-fluid">
 		      <div class="span8 offset2">
 				<hr>
-				  <p>Verify that the file uploaded correctly and click Continue.<br>.</p>
+				  <p>Verify that the file uploaded correctly and click Continue.<br></p>
 				  <table class="table table-condensed">
 				    <tr><td><b>RA</b></td>
 					<td><b>DEC</b></td>
@@ -80,12 +82,13 @@
 	<div class="row-fluid">
 		<div class="span4">
 			<h3>Other usages:</h3>
-			<p>This site can also produce catalogs and zeropoints of uploaded star lists - see
+			<p>This site can also produce matched catalogs and zeropoints of uploaded star lists - see
 				submission forms to the right.  These both require space-separated or tab-separated
 				ASCII files with no blank lines (use # to comment out lines), with all coordinates in 
-				decimal degrees. Designed for stars grouped together in a field and capped at 1000 sources.
+				decimal degrees. Designed for stars grouped together in a field and limited to fields
+				of 1&deg; (3600") or less.
 				<br><br>
-			   It also provides an API, for automated queries using a program like <code>curl</code> or <code>wget</code>.
+			   There is also an API, for automated queries using a program like <code>curl</code> or <code>wget</code>.
 			    See <a href="{{ url_for('show_info') }}#api" >here</a> for more information.
 		</div><!--/span-->
 		<div class="span4">

@@ -243,7 +243,7 @@ function scale_width( size ) {
 }
 
 var svg2 = d3.select("#overlay_hero").append("svg")
-    .attr("height", "55%")
+    .attr("height", "53%")
     .attr("width", "100%")
 	.attr("viewBox", "0 0 "+String(height2)+" "+String(width2));
 
@@ -318,17 +318,18 @@ svg2.append("text")
     .attr("y", height2-20);
 
 // put in all of the star markers
+var rad = 8;
 svg2.selectAll(".dot")
     .data(coords)
   .enter().append("circle")
     .attr("class", "dot")
     .attr("cx", function(d){ return x(d[2]); })
     .attr("cy", function(d){ return y(d[3]); })
-    .attr("r", 5)
+    .attr("r", rad)
 	.on("mouseover", function(d) {
-		d3.select(this).transition().duration(150).attr("r",8); })
+		d3.select(this).transition().duration(150).attr("r",rad+3); })
 	.on("mouseout", function(d) {
-		d3.select(this).transition().duration(150).attr("r",5); })
+		d3.select(this).transition().duration(150).attr("r",rad); })
 	.on("mousedown", function(d) { 
 		draw_spectrum(d[4], d[5], d[0], d[1]);
 		d3.select(this).attr("stroke", "firebrick");

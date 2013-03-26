@@ -813,7 +813,7 @@ def api_handler():
                 # check to see whether we exceed the 1-degree limit
                 center, size = gs.find_field( data[:,:2].tolist() )
                 if max(size) > MAX_FIELD:
-                    return return Response( '{ success:false, message:"Requested field size exceeds limit."}',
+                    return Response( '{ success:false, message:"Requested field size exceeds limit."}',
                                     mimetype='application/json')
             except:
                 return Response( '{ success:false, message:"Uploaded file incorrectly formatted."}',

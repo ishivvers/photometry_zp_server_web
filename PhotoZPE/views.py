@@ -53,7 +53,9 @@ except:
 DB = pm.MongoClient().PZserver
 
 # the maximum number of sources to show on the spectrum page (does not affect catalog download)
-max_disp = 300
+MAX_DISP = 300
+# the maximum field size to allow
+MAX_FIELD = 3600.
 
 
 # define a special class to handle xmlrpc weirdness
@@ -77,8 +79,15 @@ def show_upload():
     to the file name along to results! Done!
     '''
     if request.method == 'GET':
+        # if this is a redirect, include any feedback (error messages)
+        try:
+            feedback = session['feedback']
+            session['feedback'] = ''
+        except:
+            # if no feedback found, will simply fall to here
+            feedback = ''
         # serve up the upload interface
-        return render_template( "upload.html" )
+        return render_template( "upload.html", feedback=feedback )
     else:
         # see which mode we're in
         mode = int(request.form['mode'])
@@ -92,8 +101,8 @@ def show_upload():
             except:
                 return render_template( "upload.html", feedback="Could not interpret input - please enter valid coordinates "+\
                                                                 "in decimal degrees or sexagesimal (HH:MM:SS.S, DD:MM:SS.S), "+\
-                                                                "and make sure the requested field is 7200 arcseconds or smaller.")
-            if not (0. <= ra <= 360.) or not (-90. <= dec <= 90.) or not (0. <= fs <= 7200.):
+                                                                "and make sure the requested field is MAX_FIELD arcseconds or smaller.")
+            if not (0. <= ra <= 360.) or not (-90. <= dec <= 90.) or not (0. <= fs <= MAX_FIELD):
                 return render_template( "upload.html", feedback="Coordinates or field size beyond limits.")
             # if all's good, create the collection and populate it
             data = ra, dec, fs
@@ -111,7 +120,11 @@ def show_upload():
                 try:
                     fn = app.root_path + '/tmp/' + str(np.random.randint(9999)) + '.txt'
                     source_file.save( fn )
-                    data = np.loadtxt( fn )[:1000] #only accept first 1000 sources
+                    data = np.loadtxt( fn ) #[:1000] #only accept first 1000 sources
+                    # check to see whether we exceed the 1-degree limit
+                    center, size = gs.find_field( data[:,:2].tolist() )
+                    if max(size) > MAX_FIELD:
+                        return render_template( "upload.html", feedback="Requested field exceeds size limit!")
                 except:
                    return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
                                                             "is a properly-formatted ASCII file.")
@@ -354,13 +367,15 @@ def show_results():
         try:
             coll = DB[ session['sid'] ]
         except:
+            session['feedback'] = "Error: Could not find query results in database, please submit a new request."
             return redirect(url_for('show_upload'))
     try:
         # if database entry not found, shunt them back to upload
         mode = coll.find_one( {"entry":"mode"} )['mode']
     except:
+        session['feedback'] = "Error: Could not find query results in database, please submit a new request."
         return redirect(url_for('show_upload'))
-    
+        
     # first, test to see whether we've already built a database, and simply display it
     if coll['data'].find_one() != None:
         curs = coll['data'].find()
@@ -369,7 +384,7 @@ def show_results():
             obj = curs.next()
             model_indices.append( obj["models"] )
             coords.append( obj["coords"] )
-        coords = np.array(coords[:max_disp])
+        coords = np.array(coords[:MAX_DISP])
         center, width, offsets = coords_to_offsets( coords )
         send_coords = []
         for i in range(len(coords)):
@@ -383,15 +398,19 @@ def show_results():
             zp_mad = coll.find_one( {"entry":"zeropoint_estimate"})["mad"]
             return render_template( "results3.html", coords=json.dumps(send_coords), field_center=json.dumps(center.tolist()),\
                         field_width=str(width), zp=round(zp_est,2), mad=round(zp_mad,2), band=band )
-    
+        
     # build the catalog and display it                     
     if mode == 1:
         search_field = coll.find_one( {"entry":"search_field"})
         ra = search_field['ra']
         dec = search_field['dec']
         fs = search_field['fs']
-        cat = gs.catalog( (ra,dec), fs ) #square box of size fs
-
+        try:
+            cat = gs.catalog( (ra,dec), fs ) #square box of size fs
+        except ValueError:
+            session['feedback'] = "Error: No good sources found in requested field."
+            return redirect(url_for('show_upload'))
+        
         # handle differences in beast or local operation
         if not app.config['BEAST_MODE']:
             cat.SEDs = cat.SEDs.tolist()
@@ -399,21 +418,21 @@ def show_results():
             cat.coords = cat.coords.tolist()
         else:
             cat = special_dict(cat)
-
+            
         # put into database
         for i in range(len(cat.SEDs)):
             coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i],\
                                     "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
-
+                                    
         # send to webpage
-        coords = cat.coords[:max_disp]
+        coords = cat.coords[:MAX_DISP]
         center, width, offsets = coords_to_offsets( coords )
         send_coords = []
         for i in range(len(coords)):
             send_coords.append( [coords[i][0], coords[i][1], offsets[i][0], offsets[i][1], cat.models[i], i] )
         return render_template( "results12.html", coords=json.dumps(send_coords),\
                                     field_center=json.dumps(center.tolist()), field_width=str(width))
-    
+        
     elif mode == 2:
         requested_coords = []
         curs = coll['requested_sources'].find()
@@ -422,7 +441,11 @@ def show_results():
             requested_coords.append( [obj['ra'], obj['dec']] )
         
         center, size = gs.find_field( requested_coords )
-        cat = gs.catalog( center, max(size), requested_coords )
+        try:
+            cat = gs.catalog( center, max(size), requested_coords )
+        except ValueError:
+            session['feedback'] = "Error: No good sources found in requested field."
+            return redirect(url_for('show_upload'))
         
         # handle differences in beast or local operation
         if not app.config['BEAST_MODE']:
@@ -431,7 +454,7 @@ def show_results():
             cat.coords = cat.coords.tolist()
         else:
             cat = special_dict(cat)
-
+            
         # match requested coords to returned sources
         matches,tmp = gs.identify_matches( requested_coords, cat.coords )
         
@@ -447,14 +470,14 @@ def show_results():
                 i +=1
         
         # send to webpage
-        out_coords = np.array(out_coords[:max_disp])
+        out_coords = np.array(out_coords[:MAX_DISP])
         center, width, offsets = coords_to_offsets( out_coords )
         send_coords = []
         for i in range(len(out_coords)):
             send_coords.append( [out_coords[i][0], out_coords[i][1], offsets[i][0], offsets[i][1], out_model_indices[i], i] )
         return render_template( "results12.html", coords=json.dumps(send_coords),\
                                             field_center=json.dumps(center.tolist()), field_width=str(width))
-    
+        
     elif mode == 3:
         band = coll.find_one( {"entry":"passband"} )["passband"]
         requested_coords, inst_mags = [],[]
@@ -465,7 +488,11 @@ def show_results():
             inst_mags.append( obj['inst_mag'] )
         
         center, size = gs.find_field( requested_coords )
-        cat = gs.catalog( center, max(size), requested_coords )
+        try:
+            cat = gs.catalog( center, max(size), requested_coords )
+        except ValueError:
+            session['feedback'] = "Error: No good sources found in requested field."
+            return redirect(url_for('show_upload'))
         
         # handle differences in beast or local operation
         if not app.config['BEAST_MODE']:
@@ -474,7 +501,7 @@ def show_results():
             cat.coords = cat.coords.tolist()
         else:
             cat = special_dict(cat)
-
+            
         # pull out only the band we care about
         iband = ALL_FILTERS.index(band)
         mod_mags = [ sss[ iband ] for sss in cat.SEDs ]
@@ -497,7 +524,7 @@ def show_results():
                 i +=1
         
         # send to webpage
-        out_coords = np.array(out_coords[:max_disp])
+        out_coords = np.array(out_coords[:MAX_DISP])
         center, width, offsets = coords_to_offsets( out_coords )
         send_coords = []
         for i in range(len(out_coords)):
@@ -505,6 +532,7 @@ def show_results():
             
         return render_template( "results3.html", coords=json.dumps(send_coords), field_center=json.dumps(center.tolist()),\
                         field_width=str(width), zp=round(median_zp,2), mad=round(mad_zp,2), band=band )
+
 
 
 def coords_to_offsets( coords ):
@@ -665,24 +693,25 @@ def serve_full_catalog():
     "# Catalog produced by the Photometric Estimate Server\n"+\
     "# http://classy.astro.berkeley.edu/ \n" +\
     "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
-    "#\n#  Mode is the set of observations used to fit the model\n" +\
-    "#   0=SDSS+2MASS, 1=USNOB+2MASS\n"+\
-    "# " + "{}      {}       ".format("RA","DEC") + (' '*6).join(ALL_FILTERS) +\
-    " "*6 + '  '.join([val+"_err" for val in ALL_FILTERS]) + "  Mode\n"
+    '#  Mode = 0: -> B,V,R,I,y modeled from SDSS and 2-MASS\n' +\
+    '#  Mode = 1: -> u,g,r,i,z,y,V,I modeled from USNOB-1 and 2-MASS\n' +\
+    "# " + "RA".ljust(8) + "DEC".ljust(10) + "".join([f.ljust(8) for f in ALL_FILTERS]) +\
+    "".join([(f+"_err").ljust(8) for f in ALL_FILTERS]) + "Mode\n"
     
     coll = DB[ session['sid'] ]
     curs = coll['data'].find()
     for i in range(curs.count()):
         obj = curs.next()
-        catalog_txt += " ".join(map(lambda x: "%.6f"%x, obj["coords"]))+" "
-        catalog_txt += " ".join(map(lambda x: "%.3f"%x, obj["sed"]))+" "
-        catalog_txt += " ".join(map(lambda x: "%.4f"%x, obj["errors"]))+" "
+        catalog_txt += "".join([ s.ljust(10) for s in map(lambda x: "%.6f"%x, obj["coords"]) ])
+        catalog_txt += "".join([ s.ljust(8) for s in map(lambda x: "%.3f"%x, obj["sed"]) ])
+        catalog_txt += "".join([ s.ljust(8) for s in map(lambda x: "%.4f"%x, obj["errors"]) ])
         catalog_txt += str(obj["mode"])+"\n"
         
     response = Response(catalog_txt, mimetype='text/plain')
     response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
     return response
 
+    
 
 @app.route('/servezp', methods=['GET'])
 def serve_zeropoints():
@@ -718,7 +747,7 @@ def api_handler():
         pass
     if request.method == 'GET':
         '''
-        Produce & return a catalog in a field.
+        Produce & return a catalog in a field.  This is mode 1.
         '''
         try:
             ra = parse_ra( request.args.get('ra') )
@@ -727,7 +756,7 @@ def api_handler():
         except:
             return Response( '{ success:false, message:"Request not formatted properly."}',
                             mimetype='application/json')
-        if not (0. < ra < 360.) or not (-90. < dec < 90.) or not (0. < size < 7200.):
+        if not (0. < ra < 360.) or not (-90. < dec < 90.) or not (0. < size < MAX_FIELD):
             return Response( '{ success:false, message:"Requested field either too large or entered incorrectly."}',
                             mimetype='application/json')
     
@@ -735,8 +764,12 @@ def api_handler():
         coll = create_collection()
         coll.insert( {"entry":"mode", "mode":1} )
         coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":size} )
-        cat = gs.catalog( (ra,dec), size )
-
+        try:
+            cat = gs.catalog( (ra,dec), size )
+        except ValueError:
+            return Response( '{ success:false, message:"No suitable sources found in requested field."}',
+                            mimetype='application/json')
+            
         # handle differences in beast or local operation
         if not app.config['BEAST_MODE']:
             cat.SEDs = cat.SEDs.tolist()
@@ -744,7 +777,7 @@ def api_handler():
             cat.coords = cat.coords.tolist()
         else:
             cat = special_dict(cat)
-
+            
         # put the catalog entries both into the database and into a response
         json_list = [ {'query_ID':session['sid']} ]
         for i in range(len(cat.SEDs)):
@@ -763,7 +796,7 @@ def api_handler():
             return response
     else:
         '''
-        Produce and return a cross-matched catalog, perhaps with zeropoint estimate.
+        Produce and return a cross-matched catalog, perhaps with zeropoint estimate.  Modes 2, 3.
         '''
         try:
             mode = int( request.args.get('mode') )
@@ -776,7 +809,12 @@ def api_handler():
             try:
                 fn = app.root_path + '/tmp/' + str(np.random.randint(9999)) + '.txt' 
                 source_file.save( fn )
-                data = np.loadtxt( fn )[:1000] #only accept first 1000 sources
+                data = np.loadtxt( fn ) #[:1000] #only accept first 1000 sources
+                # check to see whether we exceed the 1-degree limit
+                center, size = gs.find_field( data[:,:2].tolist() )
+                if max(size) > MAX_FIELD:
+                    return return Response( '{ success:false, message:"Requested field size exceeds limit."}',
+                                    mimetype='application/json')
             except:
                 return Response( '{ success:false, message:"Uploaded file incorrectly formatted."}',
                                 mimetype='application/json')
@@ -792,9 +830,13 @@ def api_handler():
             for row in data:
                 coll["requested_sources"].insert( {"ra":row[0], "dec":row[1] })
             requested_coords = data[:,:2].tolist()
-
+            
             center, size = gs.find_field( requested_coords )
-            cat = gs.catalog( center, max(size), requested_coords )
+            try:
+                cat = gs.catalog( center, max(size), requested_coords )
+            except ValueError:
+                return Response( '{ success:false, message:"No suitable sources found in requested field."}',
+                                mimetype='application/json')
             
             # handle differences in beast or local operation
             if not app.config['BEAST_MODE']:
@@ -806,7 +848,7 @@ def api_handler():
             
             # match requested coords to returned sources
             matches,tmp = gs.identify_matches( requested_coords, cat.coords)
-
+            
             # put into database
             json_list = [ {'query_ID':session['sid']} ]
             i = 0
@@ -845,7 +887,11 @@ def api_handler():
             inst_mags = data[:,2].tolist()
             
             center, size = gs.find_field( requested_coords )
-            cat = gs.catalog( center, max(size), requested_coords )
+            try:
+                cat = gs.catalog( center, max(size), requested_coords )
+            except ValueError:
+                return Response( '{ success:false, message:"No suitable sources found in requested field."}',
+                                mimetype='application/json')
             
             # handle differences in beast or local operation
             if not app.config['BEAST_MODE']:
@@ -899,20 +945,20 @@ def build_ascii( json_list, header_str=None ):
     "# Catalog produced by the Photometric Estimate Server\n"+\
     "# http://classy.astro.berkeley.edu/ \n" +\
     "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
-    "#\n#  Mode is the set of observations used to fit the model\n" +\
-    "#   0=SDSS+2MASS, 1=USNOB+2MASS\n"
+    '#  Mode = 0: -> B,V,R,I,y modeled from SDSS and 2-MASS\n' +\
+    '#  Mode = 1: -> u,g,r,i,z,y,V,I modeled from USNOB-1 and 2-MASS\n'
     if header_str != None:
         if type(header_str) == str:
             ascii_out += '# '+header_str+'\n'
         elif type(header_str) == list:
             for hs in header_str:
                 ascii_out += '# '+hs+'\n'
-    ascii_out += "# " + "{}       {}       ".format("RA","DEC") + (' '*6).join(ALL_FILTERS) + " "*6 +\
-    '  '.join([val+"_err" for val in ALL_FILTERS]) + "  Mode\n"
+    ascii_out += "# " + "RA".ljust(8) + "DEC".ljust(10) + "".join([f.ljust(8) for f in ALL_FILTERS]) +\
+                 "".join([(f+"_err").ljust(8) for f in ALL_FILTERS]) + "Mode\n"
     for obj in json_list:
-        ascii_out += " ".join(map(lambda x: "%.6f"%x, [obj["ra"], obj["dec"]]))+" "
-        ascii_out += " ".join(map(lambda x: "%.3f"%x, obj["phot"]))+" "
-        ascii_out += " ".join(map(lambda x: "%.4f"%x, obj["errors"]))+" "
+        ascii_out += "".join([ s.ljust(10) for s in map(lambda x: "%.6f"%x, [obj["ra"], obj["dec"]]) ])
+        ascii_out += "".join([ s.ljust(8) for s in map(lambda x: "%.3f"%x, obj["phot"]) ])
+        ascii_out += "".join([ s.ljust(8) for s in map(lambda x: "%.4f"%x, obj["errors"]) ])
         ascii_out += str(obj["mode"])+"\n"
     return ascii_out
 

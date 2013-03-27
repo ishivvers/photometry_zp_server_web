@@ -288,7 +288,7 @@ def show_results():
         
     # build the catalog and display it                     
     if mode == 1:
-        search_field = coll.find_one( {"entry":"search_field"})
+        search_field = coll.find_one( {"entry":"search_field"} )
         ra = search_field['ra']
         dec = search_field['dec']
         fs = search_field['fs']
@@ -298,13 +298,10 @@ def show_results():
             session['feedback'] = "Error: No good sources found in requested field."
             return redirect(url_for('show_upload'))
         
-        # handle differences in beast or local operation
-        if not app.config['BEAST_MODE']:
-            cat.SEDs = cat.SEDs.tolist()
-            cat.full_errors = cat.full_errors.tolist()
-            cat.coords = cat.coords.tolist()
-        else:
-            cat = special_dict(cat)
+        # put into list form, for pymongo and flask handling
+        cat.SEDs = cat.SEDs.tolist()
+        cat.full_errors = cat.full_errors.tolist()
+        cat.coords = cat.coords.tolist()
             
         # put into database
         for i in range(len(cat.SEDs)):
@@ -333,17 +330,14 @@ def show_results():
         except ValueError:
             session['feedback'] = "Error: No good sources found in requested field."
             return redirect(url_for('show_upload'))
-        
-        # handle differences in beast or local operation
-        if not app.config['BEAST_MODE']:
-            cat.SEDs = cat.SEDs.tolist()
-            cat.full_errors = cat.full_errors.tolist()
-            cat.coords = cat.coords.tolist()
-        else:
-            cat = special_dict(cat)
             
         # match requested coords to returned sources
         matches,tmp = gs.identify_matches( requested_coords, cat.coords )
+        
+        # put into list form, for pymongo and flask handling
+        cat.SEDs = cat.SEDs.tolist()
+        cat.full_errors = cat.full_errors.tolist()
+        cat.coords = cat.coords.tolist()
         
         # put into database
         out_coords, out_model_indices = [],[]
@@ -380,14 +374,6 @@ def show_results():
         except ValueError:
             session['feedback'] = "Error: No good sources found in requested field."
             return redirect(url_for('show_upload'))
-        
-        # handle differences in beast or local operation
-        if not app.config['BEAST_MODE']:
-            cat.SEDs = cat.SEDs.tolist()
-            cat.full_errors = cat.full_errors.tolist()
-            cat.coords = cat.coords.tolist()
-        else:
-            cat = special_dict(cat)
             
         # pull out only the band we care about
         iband = ALL_FILTERS.index(band)
@@ -399,6 +385,11 @@ def show_results():
         for val in all_zps:
             coll['zeropoints'].insert( {"zp":val} )
         
+        # put into list form, for pymongo and flask handling
+        cat.SEDs = cat.SEDs.tolist()
+        cat.full_errors = cat.full_errors.tolist()
+        cat.coords = cat.coords.tolist()
+                        
         # put into db
         out_coords, out_model_indices = [],[]
         i = 0
@@ -671,15 +662,12 @@ def api_handler():
         except ValueError:
             return Response( '{ success:false, message:"No suitable sources found in requested field."}',
                             mimetype='application/json')
-            
-        # handle differences in beast or local operation
-        if not app.config['BEAST_MODE']:
-            cat.SEDs = cat.SEDs.tolist()
-            cat.full_errors = cat.full_errors.tolist()
-            cat.coords = cat.coords.tolist()
-        else:
-            cat = special_dict(cat)
-            
+        
+        # put into list form, for pymongo and flask handling
+        cat.SEDs = cat.SEDs.tolist()
+        cat.full_errors = cat.full_errors.tolist()
+        cat.coords = cat.coords.tolist()
+        
         # put the catalog entries both into the database and into a response
         json_list = [ {'query_ID':session['sid']} ]
         for i in range(len(cat.SEDs)):
@@ -740,16 +728,13 @@ def api_handler():
                 return Response( '{ success:false, message:"No suitable sources found in requested field."}',
                                 mimetype='application/json')
             
-            # handle differences in beast or local operation
-            if not app.config['BEAST_MODE']:
-                cat.SEDs = cat.SEDs.tolist()
-                cat.full_errors = cat.full_errors.tolist()
-                cat.coords = cat.coords.tolist()
-            else:
-                cat = special_dict(cat)
-            
             # match requested coords to returned sources
             matches,tmp = gs.identify_matches( requested_coords, cat.coords)
+            
+            # put into list form, for pymongo and flask handling
+            cat.SEDs = cat.SEDs.tolist()
+            cat.full_errors = cat.full_errors.tolist()
+            cat.coords = cat.coords.tolist()
             
             # put into database
             json_list = [ {'query_ID':session['sid']} ]
@@ -795,14 +780,6 @@ def api_handler():
                 return Response( '{ success:false, message:"No suitable sources found in requested field."}',
                                 mimetype='application/json')
             
-            # handle differences in beast or local operation
-            if not app.config['BEAST_MODE']:
-                cat.SEDs = cat.SEDs.tolist()
-                cat.full_errors = cat.full_errors.tolist()
-                cat.coords = cat.coords.tolist()
-            else:
-                cat = special_dict(cat)
-            
             # pull out only the band we care about
             iband = ALL_FILTERS.index(band)
             mod_mags = [ sss[ iband ] for sss in cat.SEDs ]
@@ -812,6 +789,11 @@ def api_handler():
             coll.insert( {"entry":"zeropoint_estimate", "zp":median_zp, "mad":mad_zp} )
             for val in all_zps:
                 coll['zeropoints'].insert( {"zp":val} )
+                
+            # put into list form, for pymongo and flask handling
+            cat.SEDs = cat.SEDs.tolist()
+            cat.full_errors = cat.full_errors.tolist()
+            cat.coords = cat.coords.tolist()
             
             # put into database and into json or ascii format
             json_list = [ {'query_ID':session['sid'], 'median_zeropoint':median_zp, 'MAD_zeropoint':mad_zp} ]

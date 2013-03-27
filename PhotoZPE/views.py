@@ -924,7 +924,7 @@ def api_handler():
             # put into database and into json or ascii format
             json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
                            'query_ID':session['sid'], 'website':web_host, 'bands':ALL_FILTERS,\
-                           'median_zeropoint':median_zp, 'MAD_zeropoint':mad_zp}, []]
+                           'median_zeropoint':round(median_zp,2), 'MAD_zeropoint':round(mad_zp,2)}, []]
             i = 0
             for j,match in enumerate(matches):
                 if match >= 0:
@@ -938,8 +938,8 @@ def api_handler():
             if response_type == 'json':
                 return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
             elif response_type == 'ascii':
-                header = ["Query_ID: {}".format(json_list[0]['query_ID']), "Zeropoint: {}".format(round(json_list[0]['median_zeropoint'],2)),\
-                          "M.A.D: {}".format(round(json_list[0]['MAD_zeropoint'],2))]
+                header = ["Query_ID: {}".format(json_list[0]['query_ID']), "Zeropoint: {}".format(json_list[0]['median_zeropoint']),\
+                          "M.A.D: {}".format(json_list[0]['MAD_zeropoint'])]
                 ascii_out = build_ascii( json_list[1], header )
                 response = Response(ascii_out, mimetype='text/plain')
                 response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/indirect/o/ishivvers/my_python/bin/python
 '''
 A python script to clear stored DB entries more than N days old, and
 delete old uploaded files.

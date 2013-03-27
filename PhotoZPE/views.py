@@ -64,6 +64,8 @@ MAX_DISP = 500
 # the maximum field size to allow
 MAX_FIELD = 3600.
 
+# website domain name
+web_host = 'http://classy.astro.berkeley.edu/'
 
 ############################################
 # BASICS
@@ -682,7 +684,7 @@ def serve_full_catalog():
     #mags, errs, mods, coords = DATA
     catalog_txt = \
     "# Catalog produced by the Photometric Estimate Server\n"+\
-    "# http://classy.astro.berkeley.edu/ \n" +\
+    "# %s \n"%web_host +\
     "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
     '#  Mode = 0: -> B,V,R,I,y modeled from SDSS and 2-MASS\n' +\
     '#  Mode = 1: -> u,g,r,i,z,y,V,I modeled from USNOB-1 and 2-MASS\n' +\
@@ -791,18 +793,19 @@ def api_handler():
         cat.coords = cat.coords.tolist()
         
         # put the catalog entries both into the database and into a response
-        json_list = [ {'query_ID':session['sid']} ]
+        json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
+                       'query_ID':session['sid'], 'website':web_host, 'bands':ALL_FILTERS}, []]
         for i in range(len(cat.SEDs)):
             coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i],\
-                                    "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
-            json_list.append({ 'ra':cat.coords[i][0], 'dec':cat.coords[i][1], 'mode':cat.modes[i], 'phot':cat.SEDs[i],\
-                               'errors':cat.full_errors[i] })
+                                  "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
+            json_list[1].append({ 'ra':cat.coords[i][0], 'dec':cat.coords[i][1], 'mode':cat.modes[i],\
+                                  'phot':np.round(cat.SEDs[i],3).tolist(), 'errors':np.round(cat.full_errors[i],4).tolist() })
         
         # return the catalog in either ascii or JSON
         if response_type == 'json':
             return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
         elif response_type == 'ascii':
-            ascii_out = build_ascii( json_list[1:], "Query ID: {}".format(json_list[0]['query_ID']) )
+            ascii_out = build_ascii( json_list[1], "Query ID: {}".format(json_list[0]['query_ID']) )
             response = Response(ascii_out, mimetype='text/plain')
             response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
             return response
@@ -859,21 +862,22 @@ def api_handler():
             cat.coords = cat.coords.tolist()
             
             # put into database
-            json_list = [ {'query_ID':session['sid']} ]
+            json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
+                           'query_ID':session['sid'], 'website':web_host, 'bands':ALL_FILTERS}, []]
             i = 0
             for j,match in enumerate(matches):
                 if match >= 0:
                     coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match],\
-                                            "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
-                    json_list.append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
-                                       'phot':cat.SEDs[match], 'errors':cat.full_errors[match] })
+                                          "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
+                    json_list[1].append( {'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
+                                          'phot':np.round(cat.SEDs[match],3).tolist(), 'errors':np.round(cat.full_errors[match],4).tolist() })
                     i +=1
             
             # return the catalog in either ascii or JSON
             if response_type == 'json':
                 return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
             elif response_type == 'ascii':
-                ascii_out = build_ascii( json_list[1:], "Query ID: {}".format(json_list[0]['query_ID']) )
+                ascii_out = build_ascii( json_list[1], "Query ID: {}".format(json_list[0]['query_ID']) )
                 response = Response(ascii_out, mimetype='text/plain')
                 response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
                 return response
@@ -918,14 +922,16 @@ def api_handler():
             cat.coords = cat.coords.tolist()
             
             # put into database and into json or ascii format
-            json_list = [ {'query_ID':session['sid'], 'median_zeropoint':median_zp, 'MAD_zeropoint':mad_zp} ]
+            json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
+                           'query_ID':session['sid'], 'website':web_host, 'bands':ALL_FILTERS,\
+                           'median_zeropoint':median_zp, 'MAD_zeropoint':mad_zp}, []]
             i = 0
             for j,match in enumerate(matches):
                 if match >= 0:
                     coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match],\
                                             "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
-                    json_list.append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
-                                       'phot':cat.SEDs[match], 'errors':cat.full_errors[match] })
+                    json_list[1].append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
+                                       'phot':np.round(cat.SEDs[match],3).tolist(), 'errors':np.round(cat.full_errors[match],4).tolist() })
                     i +=1
             
             # return the catalog in either ascii or JSON
@@ -934,7 +940,7 @@ def api_handler():
             elif response_type == 'ascii':
                 header = ["Query_ID: {}".format(json_list[0]['query_ID']), "Zeropoint: {}".format(round(json_list[0]['median_zeropoint'],2)),\
                           "M.A.D: {}".format(round(json_list[0]['MAD_zeropoint'],2))]
-                ascii_out = build_ascii( json_list[1:], header )
+                ascii_out = build_ascii( json_list[1], header )
                 response = Response(ascii_out, mimetype='text/plain')
                 response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
                 return response                    

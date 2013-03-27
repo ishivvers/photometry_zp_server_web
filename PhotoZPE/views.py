@@ -686,14 +686,14 @@ def serve_full_catalog():
     "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
     '#  Mode = 0: -> B,V,R,I,y modeled from SDSS and 2-MASS\n' +\
     '#  Mode = 1: -> u,g,r,i,z,y,V,I modeled from USNOB-1 and 2-MASS\n' +\
-    "# " + "RA".ljust(8) + "DEC".ljust(10) + "".join([f.ljust(8) for f in ALL_FILTERS]) +\
+    "# " + "RA".ljust(10) + "DEC".ljust(12) + "".join([f.ljust(8) for f in ALL_FILTERS]) +\
     "".join([(f+"_err").ljust(8) for f in ALL_FILTERS]) + "Mode\n"
     
     coll = DB[ session['sid'] ]
     curs = coll['data'].find()
     for i in range(curs.count()):
         obj = curs.next()
-        catalog_txt += "".join([ s.ljust(10) for s in map(lambda x: "%.6f"%x, obj["coords"]) ])
+        catalog_txt += "".join([ s.ljust(12) for s in map(lambda x: "%.6f"%x, obj["coords"]) ])
         catalog_txt += "".join([ s.ljust(8) for s in map(lambda x: "%.3f"%x, obj["sed"]) ])
         catalog_txt += "".join([ s.ljust(8) for s in map(lambda x: "%.4f"%x, obj["errors"]) ])
         catalog_txt += str(obj["mode"])+"\n"
@@ -959,10 +959,10 @@ def build_ascii( json_list, header_str=None ):
         elif type(header_str) == list:
             for hs in header_str:
                 ascii_out += '# '+hs+'\n'
-    ascii_out += "# " + "RA".ljust(8) + "DEC".ljust(10) + "".join([f.ljust(8) for f in ALL_FILTERS]) +\
+    ascii_out += "# " + "RA".ljust(10) + "DEC".ljust(12) + "".join([f.ljust(8) for f in ALL_FILTERS]) +\
                  "".join([(f+"_err").ljust(8) for f in ALL_FILTERS]) + "Mode\n"
     for obj in json_list:
-        ascii_out += "".join([ s.ljust(10) for s in map(lambda x: "%.6f"%x, [obj["ra"], obj["dec"]]) ])
+        ascii_out += "".join([ s.ljust(12) for s in map(lambda x: "%.6f"%x, [obj["ra"], obj["dec"]]) ])
         ascii_out += "".join([ s.ljust(8) for s in map(lambda x: "%.3f"%x, obj["phot"]) ])
         ascii_out += "".join([ s.ljust(8) for s in map(lambda x: "%.4f"%x, obj["errors"]) ])
         ascii_out += str(obj["mode"])+"\n"

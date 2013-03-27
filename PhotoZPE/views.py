@@ -6,28 +6,17 @@ from time import time, strftime
 import json
 import re, os
 import pymongo as pm
-
-from sys import platform
-if 'linux' in platform.lower():
-    import xmlrpclib
-    # startup the xml connection to beast
-    gs = xmlrpclib.ServerProxy('http://beast.berkeley.edu:5555', allow_none=True)
-else:
-    # import the local version
-    from my_code import get_SEDs as gs
+from my_code import get_SEDs as gs
 
 
-########################################################################
-# The below can stay as global variables, since they don't change across threads
-ALL_FILTERS = ['u','g','r','i','z','y','B','V','R','I','J','H','K']
-# band: (central wavelength (AA), zeropoint (erg/s/cm^2/AA), catalog index)
-FILTER_PARAMS =  {'u': (3551., 8.6387e-9, 0), 'g': (4686., 4.9607e-9, 1),
-                  'r': (6165., 2.8660e-9, 2), 'i': (7481., 1.9464e-9, 3),
-                  'z': (8931., 1.3657e-9, 4), 'y': (10091., 1.0696e-9, 5),
-                  'B': (4400., 6.6000e-9, 6), 'V': (5490., 3.6100e-9, 7),
-                  'R':(6500., 2.1900e-9, 7),  'I': (7885., 1.1900e-9, 9),
-                  'J':(12350., 3.1353e-10, 10), 'H':(16620., 1.1121e-10, 11),
-                  'K':(21590., 4.2909e-11, 12)}
+############################################
+# DEFINITIONS AND INITIALIZATIONS
+############################################
+
+# A list of all filters
+ALL_FILTERS = gs.ALL_FILTERS
+# a dictionary: FILTER_PARAMS[band] = (central wavelength (AA), zeropoint (erg/s/cm^2/AA), catalog index)
+FILTER_PARAMS = gs.FILTER_PARAMS
 
 # note, cannot put spectra folder in an app.config entry because 
 #  the app hasn't yet been configured when this stuff is imported
@@ -65,7 +54,10 @@ except:
     
 
 # initialize the database
-DB = pm.MongoClient().PZserver
+try:
+    DB = pm.MongoClient().PZserver
+except:
+    raise IOError('cannot connect to database')
 
 # the maximum number of sources to show on the spectrum page (does not affect catalog download)
 MAX_DISP = 500
@@ -73,19 +65,38 @@ MAX_DISP = 500
 MAX_FIELD = 3600.
 
 
-# define a special class to handle xmlrpc weirdness
-class special_dict(dict):
-    '''
-    A class that offers dictionary lookup through class attributes,
-     so that interaction over the xmlrpc server is the same as through
-     the local class.
-    '''
-    def __getattr__(self,name):
-        return self[name]
-    def __setattr__(self,name,value):
-        self[name] = value
+############################################
+# BASICS
+############################################
+@app.route('/favicon.ico')
+def favicon():
+    # quick redirect to show favicon
+    return send_from_directory(app.root_path+'/static/img','favicon.ico')
 
-#######################################################################
+
+@app.route('/robots.txt')
+def robots():
+    # quick redirect to serve robots.txt
+    return send_from_directory(app.root_path+'/static/','robots.txt')
+
+
+@app.route('/info', methods=['GET'])
+def show_info():
+    '''
+    A detailed description of the photometric estimates this produces.
+    '''
+    return render_template( "info.html" )
+
+
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    # homepage simply points to upload
+    return redirect(url_for('show_upload'))
+
+
+############################################
+# UPLOAD
+############################################
 @app.route('/upload', methods=['GET', 'POST'])
 def show_upload():
     '''
@@ -169,7 +180,6 @@ def show_upload():
                 return render_template( "upload.html", mode=mode, data=data[:5], band=band )
 
 
-## show_upload() helper functions
 def create_collection():
     # create a new collection in the database, using the unix time and a random integer
     #  to ensure a datable (yet unique) collection.  Remove these with cronjob!'
@@ -220,148 +230,10 @@ def parse_dec( inn ):
 
 
 def phmsdms(hmsdms):
-    """
-    +++ Pulled from python package 'angles' +++
-    Parse a string containing a sexageismal number.
-    
-    This can handle several types of delimiters and will process
-    reasonably valid strings. See examples.
-    
-    Parameters
-    ----------
-    hmsdms : str
-        String containing a sexagesimal number.
-        
-    Returns
-    -------
-    d : dict
-    
-        parts : a 3 element list of floats
-            The three parts of the sexagesimal number that were
-            identified.
-        vals : 3 element list of floats
-            The numerical values of the three parts of the sexagesimal
-            number.
-        sign : int
-            Sign of the sexagesimal number; 1 for positive and -1 for
-            negative.
-        units : {"degrees", "hours"}
-            The units of the sexagesimal number. This is infered from
-            the characters present in the string. If it a pure number
-            then units is "degrees".
-    """
-    units = None
-    sign = None
-    # Floating point regex:
-    # http://www.regular-expressions.info/floatingpoint.html
-    #
-    # pattern1: find a decimal number (int or float) and any
-    # characters following it upto the next decimal number.  [^0-9\-+]*
-    # => keep gathering elements until we get to a digit, a - or a
-    # +. These three indicates the possible start of the next number.
-    pattern1 = re.compile(r"([-+]?[0-9]*\.?[0-9]+[^0-9\-+]*)")
-    # pattern2: find decimal number (int or float) in string.
-    pattern2 = re.compile(r"([-+]?[0-9]*\.?[0-9]+)")
-    hmsdms = hmsdms.lower()
-    hdlist = pattern1.findall(hmsdms)
-    parts = [None, None, None]
-    
-    def _fill_right_not_none():
-        # Find the pos. where parts is not None. Next value must
-        # be inserted to the right of this. If this is 2 then we have
-        # already filled seconds part, raise exception. If this is 1
-        # then fill 2. If this is 0 fill 1. If none of these then fill
-        # 0.
-        rp = reversed(parts)
-        for i, j in enumerate(rp):
-            if j is not None:
-                break
-        if  i == 0:
-            # Seconds part already filled.
-            raise ValueError("Invalid string.")
-        elif i == 1:
-            parts[2] = v
-        elif i == 2:
-            # Either parts[0] is None so fill it, or it is filled
-            # and hence fill parts[1].
-            if parts[0] is None:
-                parts[0] = v
-            else:
-                parts[1] = v
-                
-    for valun in hdlist:
-        try:
-            # See if this is pure number.
-            v = float(valun)
-            # Sexagesimal part cannot be determined. So guess it by
-            # seeing which all parts have already been identified.
-            _fill_right_not_none()
-        except ValueError:
-            # Not a pure number. Infer sexagesimal part from the
-            # suffix.
-            if "hh" in valun or "h" in valun:
-                m = pattern2.search(valun)
-                parts[0] = float(valun[m.start():m.end()])
-                units = "hours"
-            if "dd" in valun or "d" in valun:
-                m = pattern2.search(valun)
-                parts[0] = float(valun[m.start():m.end()])
-                units = "degrees"
-            if "mm" in valun or "m" in valun:
-                m = pattern2.search(valun)
-                parts[1] = float(valun[m.start():m.end()])
-            if "ss" in valun or "s" in valun:
-                m = pattern2.search(valun)
-                parts[2] = float(valun[m.start():m.end()])
-            if "'" in valun:
-                m = pattern2.search(valun)
-                parts[1] = float(valun[m.start():m.end()])
-            if '"' in valun:
-                m = pattern2.search(valun)
-                parts[2] = float(valun[m.start():m.end()])
-            if ":" in valun:
-                # Sexagesimal part cannot be determined. So guess it by
-                # seeing which all parts have already been identified.
-                v = valun.replace(":", "")
-                v = float(v)
-                _fill_right_not_none()
-        if not units:
-            units = "degrees"
-            
-    # Find sign. Only the first identified part can have a -ve sign.
-    for i in parts:
-        if i and i < 0.0:
-            if sign is None:
-                sign = -1
-            else:
-                raise ValueError("Only one number can be negative.")
-                
-    if sign is None:  # None of these are negative.
-        sign = 1
-        
-    vals = [abs(i) if i is not None else 0.0 for i in parts]
-    return dict(sign=sign, units=units, vals=vals, parts=parts)
 
-
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    # homepage simply points to upload
-    return redirect(url_for('show_upload'))
-
-
-@app.route('/favicon.ico')
-def favicon():
-    # quick redirect to show favicon
-    return send_from_directory(app.root_path+'/static/img','favicon.ico')
-
-
-@app.route('/robots.txt')
-def robots():
-    # quick redirect to serve robots.txt
-    return send_from_directory(app.root_path+'/static/','robots.txt')
-
-
-#######################################################################
+############################################
+# RESULTS
+############################################
 @app.route('/results', methods=['GET'])
 def show_results():
     '''
@@ -549,7 +421,6 @@ def show_results():
                         field_width=str(width), zp=round(median_zp,2), mad=round(mad_zp,2), band=band )
 
 
-
 def coords_to_offsets( coords ):
     '''
     Converts each set of coordinates to an angular offset from center.
@@ -602,20 +473,13 @@ def rotate_coords( coords, theta ):
     return np.dot(R, (coords).T).T
 
     
-#######################################################################
-@app.route('/info', methods=['GET'])
-def show_info():
-    '''
-    A detailed description of the photometric estimates this produces.
-    '''
-    return render_template( "info.html" )
-
-
+############################################
+# AJAX
+############################################
 @app.route('/servespectrum', methods=['GET'])
-
 def serve_spectrum():
     '''
-    Loads spectrum loaded from numpy file and renormalizes it
+    Grabs spectrum loaded from numpy file and renormalizes it
     (given a spectrum id with url?spec=value&index=value), and then
     returns it in JSON format, as a set of objects with an x (Angstroms) and y (Flam).
     '''
@@ -726,7 +590,6 @@ def serve_full_catalog():
     return response
 
     
-
 @app.route('/servezp', methods=['GET'])
 def serve_zeropoints():
     '''
@@ -742,6 +605,31 @@ def serve_zeropoints():
     return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
 
 
+def mag2flam( magnitudes, bands ):
+    '''
+    Converts magnitudes to flam (erg/s/cm^2/A).
+    '''
+    flam = np.empty_like(magnitudes)
+    for i,b in enumerate(bands):
+        f0 = FILTER_PARAMS[b][1]
+        flam[i] = f0*10**(-.4*magnitudes[i])
+    return flam
+
+
+def flam2mag( flams, bands ):
+    '''
+    Converts flam back to magnitudes.
+    '''
+    mags = np.empty_like(flams)
+    for i,b in enumerate(bands):
+        f0 = FILTER_PARAMS[b][1]
+        mags[i] = -2.5*np.log10( flams[i]/f0 )
+    return mags
+
+
+############################################
+# API
+############################################
 @app.route('/api', methods=['GET','POST'])
 def api_handler():
     '''
@@ -976,28 +864,6 @@ def build_ascii( json_list, header_str=None ):
         ascii_out += str(obj["mode"])+"\n"
     return ascii_out
 
-
-#######################################################################
-def mag2flam( magnitudes, bands ):
-    '''
-    Converts magnitudes to flam (erg/s/cm^2/A).
-    '''
-    flam = np.empty_like(magnitudes)
-    for i,b in enumerate(bands):
-        f0 = FILTER_PARAMS[b][1]
-        flam[i] = f0*10**(-.4*magnitudes[i])
-    return flam
-
-
-def flam2mag( flams, bands ):
-    '''
-    Converts flam back to magnitudes.
-    '''
-    mags = np.empty_like(flams)
-    for i,b in enumerate(bands):
-        f0 = FILTER_PARAMS[b][1]
-        mags[i] = -2.5*np.log10( flams[i]/f0 )
-    return mags
 
 
 

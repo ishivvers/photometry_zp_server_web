@@ -644,14 +644,14 @@ def serve_sed_flams():
         ordered_list = [5,6,7,8,9, 0,1,2,3,4,10,11,12]
     sed_flam = mag2flam( sed_mags, ALL_FILTERS )
     
+    # these arrays store the values (in flam) at 1sigma away from the true value
     errsP = mag2flam( sed_mags - np.array(sed_errs), ALL_FILTERS )
     errsM = mag2flam( sed_mags + np.array(sed_errs), ALL_FILTERS )
-    flerrs = errsP-errsM
     
     # push everything into json-able format, with all of the modeled bands first
     #  followed by the observed bands
     json_list = [{'x': FILTER_PARAMS[ALL_FILTERS[i]][0], 'y': sed_flam[i], 'name': ALL_FILTERS[i],\
-                  'width': FILTER_PARAMS[ALL_FILTERS[i]][2], 'err':flerrs[i],\
+                  'width': FILTER_PARAMS[ALL_FILTERS[i]][2], 'errP':errsP[i], 'errM':errsM[i],\
                   'modeled':modeled[i]} for i in ordered_list]
     return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
 

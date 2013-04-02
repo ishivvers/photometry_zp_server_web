@@ -32,8 +32,8 @@
 //// THE SPECTRUM PLOT ////
 
 // margins & size
-var margin = {top: 10, right: 10, bottom: 20, left: 65},
-    width = 600 - margin.left - margin.right,
+var margin = {top: 10, right: 10, bottom: 20, left: 50},
+    width = 700 - margin.left - margin.right,
     height = 300 - margin.top - margin.bottom;
 
 // scales
@@ -63,7 +63,7 @@ var line = d3.svg.line()
 var svg = d3.select("#main_hero").append("svg")
     .attr("height", "43%")
     .attr("width", "100%")
-	.attr("viewBox", "0 0 600 300")
+	.attr("viewBox", "0 0 700 300")
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");	
 
@@ -94,7 +94,7 @@ svg.append("text")
 // create a variable to contain the displayed SED (used below)
 var SED = svg.append("svg:g")
              .attr("id", "SED");
-
+	
 // some feedback text so user knows what to do next
 svg.append("text")
     .attr("class", "loading")
@@ -112,7 +112,7 @@ function draw_spectrum( spec_id, sed_index, ra, dec ) {
 	// remove the loading text:
 	svg.selectAll(".loading").remove();
 	// clear plot elements
-	svg.selectAll(".rectangle").remove();
+	svg.selectAll(".errorbars").remove();
 	svg.selectAll(".labels").remove();
 	
 	// put in the line plot with a json call to serve_spectrum:
@@ -138,11 +138,12 @@ function draw_scatterplot( sed_index ) {
 	d3.json( "{{ url_for('serve_sed_flams') }}?index="+String(sed_index), function(data) {
 
 	var coll = svg.selectAll("photometry").data(data).enter();
+		// a rectangle to show the passband width
 		coll.append("rect")
-			.attr("class", "rectangle")
+			.attr("class", "errorbars")
 			.attr("x", function(d) { return xScale(d.x-.5*d.width); })
-			.attr("y", function(d) { return yScale(d.y)-2;})
-			.attr("height", 4)
+			.attr("y", function(d) { return yScale(d.y)-3;})
+			.attr("height", 6)
 			.attr("opacity", 0.8)
 			.attr("fill", function(d) { return choose_color(d.modeled); } )
 			.transition()
@@ -151,13 +152,14 @@ function draw_scatterplot( sed_index ) {
 			  .attr("width", function(d) {
 				return xScale(d.x+.5*d.width)-xScale(d.x-.5*d.width);
 				});
+		// and a line for the error bars
 		coll.append("line")
-			.attr("class", "rectangle")
+			.attr("class", "errorbars")
 			.attr("x1", function(d) { return xScale(d.x); })
 			.attr("x2", function(d) { return xScale(d.x); })
-			.attr("y1", function(d) { return yScale(d.y+d.err)})
-			.attr("y2", function(d) { return yScale(d.y+d.err)})
-			//.attr("y2", function(d) { return yScale(d.y-d.err)})
+			.attr("y1", function(d) { return yScale(d.errP)})
+			.attr("y2", function(d) { return yScale(d.errP)})
+			//.attr("y2", function(d) { return yScale(d.errM)})
 			.attr("stroke", function(d) {return choose_color(d.modeled); })
 			.attr("stroke-width", function(d) {
 				if ( d.modeled == 'm' ) {return 0}
@@ -167,7 +169,7 @@ function draw_scatterplot( sed_index ) {
 			.transition()
 			  .delay(300)
 			  .duration(200)
-			  .attr("y2", function(d) { return yScale(d.y-d.err)});
+			  .attr("y2", function(d) { return yScale(d.errM)});
 			
 		coll.append("text")
 			.attr("class", "labels")

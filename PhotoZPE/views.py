@@ -624,25 +624,35 @@ def serve_spectrum():
 @app.route('/serveflams', methods=['GET'])
 def serve_sed_flams():
     '''
-    Loads magnitudes (obs and modeled) from database created by upload, returns FLAM.
+    Loads magnitudes (obs and modeled) from database created by upload, returns
+     SED and all associated info needed for plot.
     Needs database index (given as url?index=value&spec=value).
     '''
     sed_index = int(request.args.get('index',''))
     coll = DB[ session['sid'] ]
     curs = coll['data'].find_one( {"index":sed_index} )
     sed_mags = curs["sed"]
+    sed_errs = curs["errors"]
     mode = curs["mode"]
     if mode == 1:
         #USNOB+2MASS
         modeled = ['m']*6 + ['o','m']*2 + ['o']*3
+        ordered_list = [0,1,2,3,4,5,7,9, 6,8,10,11,12]
     else:
         #SDSS+2MASS
         modeled = ['o']*5 + ['m']*5 + ['o']*3
+        ordered_list = [5,6,7,8,9, 0,1,2,3,4,10,11,12]
     sed_flam = mag2flam( sed_mags, ALL_FILTERS )
     
-    # push everything into json-able format
+    errsP = mag2flam( sed_mags - np.array(sed_errs), ALL_FILTERS )
+    errsM = mag2flam( sed_mags + np.array(sed_errs), ALL_FILTERS )
+    flerrs = errsP-errsM
+    
+    # push everything into json-able format, with all of the modeled bands first
+    #  followed by the observed bands
     json_list = [{'x': FILTER_PARAMS[ALL_FILTERS[i]][0], 'y': sed_flam[i], 'name': ALL_FILTERS[i],\
-                    'modeled':modeled[i]} for i in range(len(sed_flam))]
+                  'width': FILTER_PARAMS[ALL_FILTERS[i]][2], 'err':flerrs[i],\
+                  'modeled':modeled[i]} for i in ordered_list]
     return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
 
 

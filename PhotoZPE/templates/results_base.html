@@ -102,11 +102,18 @@ svg.append("text")
     .attr("x", function () { return width/2-50; })
     .attr("y", function () { return height/2; });
 
+// a helper function that chooses the colors for scatterplot elements
+function choose_color( modeled ) {
+	if (modeled == 'm') { return "steelblue" }
+	else { return "black"};
+};
+
 function draw_spectrum( spec_id, sed_index, ra, dec ) {
 	// remove the loading text:
 	svg.selectAll(".loading").remove();
-	// if there are already circles around, remove them
-	svg.selectAll(".circle").remove();
+	// clear plot elements
+	svg.selectAll(".rectangle").remove();
+	svg.selectAll(".labels").remove();
 	
 	// put in the line plot with a json call to serve_spectrum:
 	d3.json( "{{ url_for('serve_spectrum') }}?spec="+String(spec_id)+"&index="+String(sed_index), function(data) {
@@ -130,28 +137,44 @@ function draw_scatterplot( sed_index ) {
 	// insert the scatterplot with a json call to serve_mags
 	d3.json( "{{ url_for('serve_sed_flams') }}?index="+String(sed_index), function(data) {
 
-		svg.selectAll("circle")
-			.data(data).enter().append("circle")
-			.attr("class", "circle")
-			.attr("cx", function(d) { return xScale(d.x);})
-			.attr("cy", function(d) { return yScale(d.y);})
-			.attr("stroke", function(d) {
-				if (d.modeled == 'm') { return "steelblue" }
-				else { return "black"}
-			})
+	var coll = svg.selectAll("photometry").data(data).enter();
+		coll.append("rect")
+			.attr("class", "rectangle")
+			.attr("x", function(d) { return xScale(d.x-.5*d.width); })
+			.attr("y", function(d) { return yScale(d.y)-2;})
+			.attr("height", 4)
+			.attr("opacity", 0.8)
+			.attr("fill", function(d) { return choose_color(d.modeled); } )
 			.transition()
 			  .delay(100)
 	          .duration(200)
-			  .attr("r", 12);
-
-		// use the loading class for any text that gets updated each time
-		for ( var i=0; i<data.length; i++) {
-			svg.append("text")
-				.attr("class", "loading")
-				.attr("x", xScale(data[i].x)-4)
-				.attr("y", yScale(data[i].y)+5)
-				.text(data[i].name);
-		};
+			  .attr("width", function(d) {
+				return xScale(d.x+.5*d.width)-xScale(d.x-.5*d.width);
+				});
+		coll.append("line")
+			.attr("class", "rectangle")
+			.attr("x1", function(d) { return xScale(d.x); })
+			.attr("x2", function(d) { return xScale(d.x); })
+			.attr("y1", function(d) { return yScale(d.y+d.err)})
+			.attr("y2", function(d) { return yScale(d.y+d.err)})
+			//.attr("y2", function(d) { return yScale(d.y-d.err)})
+			.attr("stroke", function(d) {return choose_color(d.modeled); })
+			.attr("stroke-width", function(d) {
+				if ( d.modeled == 'm' ) {return 0}
+				else {return 2}
+			  })
+			.attr("opacity", 0.8)
+			.transition()
+			  .delay(300)
+			  .duration(200)
+			  .attr("y2", function(d) { return yScale(d.y-d.err)});
+			
+		coll.append("text")
+			.attr("class", "labels")
+			.attr("x", function(d) { return xScale(d.x+.5*d.width)+2; })
+			.attr("y", function(d) { return yScale(d.y)+6; })
+			.text( function(d) { return d.name; })
+			.attr("fill", function(d) { return choose_color(d.modeled); });
 	});
 };
 
@@ -258,8 +281,8 @@ svg2.append("image")
 
 // the compass rose and the scale bar
 // first, define the markers
-var defs = svg2.append("svg:defs");
-defs.append("svg:marker")
+var defs2 = svg2.append("svg:defs");
+defs2.append("svg:marker")
 	.attr("id","triangle")
 	.attr("class","compass")
 	.attr("viewBox","0 0 10 10").attr("refX",0).attr("refY", 5)
@@ -268,7 +291,7 @@ defs.append("svg:marker")
 	.attr("orient","auto")
 	.append("svg:path")
 	.attr("d", "M 0 0 L 10 5 L 0 10 z");
-defs.append("svg:marker")
+defs2.append("svg:marker")
 	.attr("id","bar")
 	.attr("class","compass")
 	.attr("viewBox","0 0 10 10").attr("refX",0).attr("refY", 2.5)

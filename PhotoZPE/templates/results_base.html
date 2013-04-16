@@ -124,12 +124,12 @@ function draw_spectrum( spec_id, sed_index, ra, dec ) {
 		// bind the data to our line plot, using the line generator above
 		svg.select("path.line").data( [data] );
 
-       // within this callback, make a call to build the scatterplot
-       draw_scatterplot( sed_index );
-       // draw the image
-       draw();
-       // and update the text
-       update_text(sed_index, spec_id, ra, dec);
+        // within this callback, make a call to build the scatterplot
+        draw_scatterplot( sed_index );
+        // draw the image
+        draw();
+        // and update the text
+        update_text(sed_index, spec_id, ra, dec);
 	});
 };
 
@@ -228,7 +228,7 @@ function update_text(sed_index, spec_id, ra, dec) {
 
 var coords = {{coords}};
 var field_center = {{field_center}};
-var field_width = {{field_width}};
+var field_width = {{field_width}};  // field width in arcminutes
 
 // set the field center text
 //document.getElementById("field").innerHTML = 'Field: '+String(d3.round(field_center[0], 4))+'&deg;, '+String(d3.round(field_center[1], 4))+'&deg;';
@@ -236,11 +236,11 @@ var field_width = {{field_width}};
 var width2 = 400, height2 = 400;
 
 var x = d3.scale.linear()
-    .domain([field_width/2, -field_width/2])
+	.domain([0, 1])
     .range([0, width2]);
 
 var y = d3.scale.linear()
-    .domain([-field_width/2, field_width/2])
+	.domain([0, 1])
     .range([height2, 0]);
 
 // a function to define a scale bar size
@@ -248,22 +248,22 @@ function scale_width( size ) {
 	// with size in arcseconds
 	// returns [scalebar size, text]
 	if (size < 10) {
-		return [x(1/60)-x(0), '1"']
+		return [x(1./(field_width*60.)), '1"']
 	}
 	else if (size < 100) {
-		return [x(-10/60)-x(0), '10"']
+		return [x(10./(field_width*60.)), '10"']
 	}
 	else if (size < 250) {
-		return [x(-25/60)-x(0), '25"']
+		return [x(25./(field_width*60.)), '25"']
 	}
 	else if (size < 500) {
-		return [x(-50/60)-x(0), '50"']
+		return [x(50./(field_width*60.)), '50"']
 	}
 	else if (size < 1000) {
-		return [x(-100/60)-x(0), '100"']
+		return [x(100./(field_width*60.)), '100"']
 	}
 	else {
-		return [x(-250/60)-x(0), '250"']
+		return [x(250./(field_width*60.)), '250"']
 	}
 }
 

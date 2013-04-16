@@ -4,9 +4,19 @@ from PhotoZPE import app #the flask object itself, created by __init__.py
 import numpy as np
 from time import time, strftime
 import json
-import re, os
+import re
+import os
+import pyfits
 import pymongo as pm
+from subprocess import Popen, PIPE
+
 from my_code import get_SEDs as gs
+
+'''
+TO DO:
+ - implement changes from results mode 1 in refresh
+   and in all other modes
+'''
 
 
 ############################################
@@ -395,20 +405,26 @@ def show_results():
             obj = curs.next()
             model_indices.append( obj["models"] )
             coords.append( obj["coords"] )
+            
+        search_field = coll.find_one( {"entry":"search_field"} )
+        ra = search_field['ra']
+        dec = search_field['dec']
+        fs = search_field['fs']
         coords = np.array(coords[:MAX_DISP])
-        center, width, offsets = coords_to_offsets( coords )
+        offsets = coords_to_offsets( ra,dec,fs, coords, sid=session['sid'] )
+        
         send_coords = []
         for i in range(len(coords)):
             send_coords.append( [coords[i][0], coords[i][1], offsets[i][0], offsets[i][1], model_indices[i], i] )
         if (mode == 1) or (mode == 2):
             return render_template( "results12.html", coords=json.dumps(send_coords),\
-                                    field_center=json.dumps(center.tolist()), field_width=str(width))
+                                    field_center=json.dumps([ra,dec]), field_width=str(fs/60.))
         elif mode == 3:
             band = coll.find_one( {"entry":"passband"} )["passband"]
             zp_est = coll.find_one( {"entry":"zeropoint_estimate"})["zp"]
             zp_mad = coll.find_one( {"entry":"zeropoint_estimate"})["mad"]
-            return render_template( "results3.html", coords=json.dumps(send_coords), field_center=json.dumps(center.tolist()),\
-                        field_width=str(width), zp=round(zp_est,2), mad=round(zp_mad,2), band=band )
+            return render_template( "results3.html", coords=json.dumps(send_coords), field_center=json.dumps([ra,dec]),\
+                        field_width=str(fs/60.), zp=round(zp_est,2), mad=round(zp_mad,2), band=band )
         
     # build the catalog and display it                     
     if mode == 1:
@@ -434,12 +450,12 @@ def show_results():
                                     
         # send to webpage
         coords = cat.coords[:MAX_DISP]
-        center, width, offsets = coords_to_offsets( coords )
+        offsets = coords_to_offsets( ra,dec,fs, coords, sid=session['sid'] )
         send_coords = []
         for i in range(len(coords)):
             send_coords.append( [coords[i][0], coords[i][1], offsets[i][0], offsets[i][1], cat.models[i], i] )
         return render_template( "results12.html", coords=json.dumps(send_coords),\
-                                    field_center=json.dumps(center.tolist()), field_width=str(width))
+                                    field_center=json.dumps([ra,dec]), field_width=str(fs/60.))
         
     elif mode == 2:
         requested_coords = []
@@ -449,6 +465,7 @@ def show_results():
             requested_coords.append( [obj['ra'], obj['dec']] )
         
         center, size = gs.find_field( requested_coords )
+        coll.insert( {"entry":"search_field", "ra":center[0], "dec":center[1], "fs":max(size)} )
         try:
             cat = gs.catalog( center, max(size), requested_coords )
         except ValueError:
@@ -476,12 +493,12 @@ def show_results():
         
         # send to webpage
         out_coords = np.array(out_coords[:MAX_DISP])
-        center, width, offsets = coords_to_offsets( out_coords )
+        offsets = coords_to_offsets( center[0],center[1],max(size), out_coords, sid=session['sid'] )
         send_coords = []
         for i in range(len(out_coords)):
             send_coords.append( [out_coords[i][0], out_coords[i][1], offsets[i][0], offsets[i][1], out_model_indices[i], i] )
         return render_template( "results12.html", coords=json.dumps(send_coords),\
-                                            field_center=json.dumps(center.tolist()), field_width=str(width))
+                                            field_center=json.dumps([center[0], center[1]]), field_width=str(max(size)/60.))
         
     elif mode == 3:
         band = coll.find_one( {"entry":"passband"} )["passband"]
@@ -493,6 +510,7 @@ def show_results():
             inst_mags.append( obj['inst_mag'] )
         
         center, size = gs.find_field( requested_coords )
+        coll.insert( {"entry":"search_field", "ra":center[0], "dec":center[1], "fs":max(size)} )
         try:
             cat = gs.catalog( center, max(size), requested_coords )
         except ValueError:
@@ -527,67 +545,69 @@ def show_results():
         
         # send to webpage
         out_coords = np.array(out_coords[:MAX_DISP])
-        center, width, offsets = coords_to_offsets( out_coords )
+        offsets = coords_to_offsets( center[0],center[1],max(size), out_coords, sid=session['sid'] )
         send_coords = []
         for i in range(len(out_coords)):
             send_coords.append( [out_coords[i][0], out_coords[i][1], offsets[i][0], offsets[i][1], out_model_indices[i], i] )
             
-        return render_template( "results3.html", coords=json.dumps(send_coords), field_center=json.dumps(center.tolist()),\
-                        field_width=str(width), zp=round(median_zp,2), mad=round(mad_zp,2), band=band )
+        return render_template( "results3.html", coords=json.dumps(send_coords), field_center=json.dumps([center[0], center[1]]),\
+                        field_width=str(max(size)/60.), zp=round(median_zp,2), mad=round(mad_zp,2), band=band )
 
 
-def coords_to_offsets( coords ):
+def coords_to_offsets( ra, dec, field_size, coords, sid=None ):
     '''
-    Converts each set of coordinates to an angular offset from center.
-    Used to query images from online DSS image server.
+    In an incredibly roundabout method, calculates all of the
+     info needed to map stars onto a downloaded image.
+    Accepts:
+     ra,dec: field center in decimal degrees
+     field_size: in arcseconds
+     coords: a list/array of coordinates
     Returns:
-     field_center (ra,dec in decimal degrees)
-	 field_width (in arcminutes) and
-	 offsets_from_center (in arcminutes)
+     a list of the fractional offsets per source (from lower lefthand corner)
     '''
-    coords = np.array(coords)
     edge = .5 # size to add to field edges in arcminutes
+    coords = np.array(coords)
+    # convert field_size from arcseconds to arcminutes
+    f_s = field_size/60.
     
-    r_c = np.deg2rad(min(coords[:,0]) + ( max(coords[:,0]) - min(coords[:,0]) )/2.)
-    d_c = np.deg2rad(min(coords[:,1]) + ( max(coords[:,1]) - min(coords[:,1]) )/2.)
-    
-    # compute the offsets in radians
-    r = np.deg2rad(coords[:,0])
-    d = np.deg2rad(coords[:,1])
-    offsets = np.empty_like( coords )
-    offsets[:,0] = (np.cos(d)*np.sin(r-r_c))/(np.cos(d_c)*np.cos(d)*np.cos(r-r_c) +\
-                                              np.sin(d_c)*np.sin(d))
-    offsets[:,1] = (np.cos(d_c)*np.sin(d)-np.cos(d)*np.sin(d_c)*np.cos(r-r_c))/ \
-                   (np.sin(d_c)*np.sin(d)+np.cos(d_c)*np.cos(d)*np.cos(r-r_c))
-    
-    # slightly rotate the offsets to mesh with the images from DSS server
-    '''
-    print abs(d_c) / np.pi
-    if abs(d_c)>(np.pi/2):
-        theta = (d_c/np.pi)*0.37
+    if sid == None:
+        # write out the coordinates to a temporary file
+        tmp_id = str(np.random.randint(9999))
+        coordsfile = app.root_path + '/tmp/' + tmp_id + '_coords.txt'
+        #coordsfile = 'tmp/' + tmp_id + '.txt'
+        np.savetxt( coordsfile, coords )
+        # get the fits file to pull out the header info
+        fitsfile = app.root_path + '/tmp/' + tmp_id + '.fits'
+        #fitsfile = 'tmp/'+tmp_id+'.fits'
+        res = Popen( 'wget "http://archive.stsci.edu/cgi-bin/dss_search?v=3&r={}&d={}'.format( ra, dec )+\
+                      '&h={}&w={}&f=fits&c=none&fov=NONE&e=J2000" -O '.format( f_s, f_s ) + fitsfile, shell=True )
+        res.communicate() # to block until downlaod is done
     else:
-        theta = (d_c/np.pi)*0
-    '''
-    offsets = rotate_coords( offsets, 0. )
+        coordsfile = app.root_path + '/tmp/' + sid + '_coords.txt'
+        fitsfile = app.root_path + '/tmp/' + sid + '.fits'
+        # if we've already saved this image, just use the loaded one
+        if not os.path.exists(coordsfile) or not os.path.exists(fitsfile):
+            np.savetxt( coordsfile, coords )
+            res = Popen( 'wget "http://archive.stsci.edu/cgi-bin/dss_search?v=3&r={}&d={}'.format( ra, dec )+\
+                          '&h={}&w={}&f=fits&c=none&fov=NONE&e=J2000" -O '.format( f_s, f_s ) + fitsfile, shell=True )
+            res.communicate() # to block until downlaod is done
+    # get image pixel size
+    header = pyfits.open( fitsfile )[0].header
+    xsize = header['NAXIS1']
+    ysize = header['NAXIS2']
+    # use sky2xy to get final coordinates
+    res = Popen( 'sky2xy '+fitsfile+' @'+coordsfile, stderr=PIPE, stdout=PIPE, shell=True )
+    o,e = res.communicate()
+    # parse the output to get the actual pixel values
+    offsets = []
+    for line in o.split('\n'):
+        if '->' not in line: continue
+        matches = re.findall('\d+\.\d+', line.split('->')[1])
+        offsets.append( [float(matches[0])/xsize, float(matches[1])/ysize] )
     
-    # and finally present them in arcminutes
-    offsets = np.rad2deg(offsets) * 60.
-    
-    # and now the width in arcminutes
-    r_fw = max(offsets[:,0]) - min(offsets[:,0])
-    d_fw = max(offsets[:,1]) - min(offsets[:,1])
-    
-    return np.rad2deg([r_c, d_c]).round(6), max([r_fw, d_fw])+2*edge, offsets
+    return offsets
+        
 
-
-def rotate_coords( coords, theta ):
-    '''
-    Rotates coordinates about center by angle theta (all in radians).
-    '''
-    R = np.array( [[np.cos(theta), -1*np.sin(theta)], [np.sin(theta), np.cos(theta)]] )
-    return np.dot(R, (coords).T).T
-
-    
 ############################################
 # AJAX
 ############################################

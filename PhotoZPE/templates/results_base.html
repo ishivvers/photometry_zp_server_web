@@ -79,16 +79,16 @@ svg.append("path")
 svg.append("text")
 	.attr("class", "x label")
 	.attr("text-anchor", "end")
-	.attr("x", width-5)
+	.attr("x", width-15)
 	.attr("y", height-8)
-	.text("wavelength (A)")
+	.text("wavelength (\u212B)")
 	.attr("opacity", 0.0);
 svg.append("text")
 	.attr("class", "y label")
 	.attr("text-anchor", "end")
 	.attr("y", 12)
 	.attr("transform", "rotate(-90)")
-	.text("Flux (erg/s/cm^2/A)")
+	.text("Flux (erg/s/cm^2/\u212B)")
 	.attr("opacity", 0.0);
 
 // create a variable to contain the displayed SED (used below)
@@ -228,6 +228,13 @@ function update_text(sed_index, spec_id, ra, dec) {
 
 var coords = {{coords}};
 var field_center = {{field_center}};
+// DSS image servers break if given exactly RA=0 or Dec=0
+if (field_center[0]==0.0) {
+	field_center[0] = 0.000001
+}
+if (field_center[1]==0.0) {
+	field_center[1] = 0.000001
+}
 var field_width = {{field_width}};  // field width in arcminutes
 
 // set the field center text

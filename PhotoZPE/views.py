@@ -14,8 +14,8 @@ from my_code import get_SEDs as gs
 
 '''
 TO DO:
- - implement changes from results mode 1 in refresh
-   and in all other modes
+ - get RA, Dec == 0.  -> 0.00001
+ - make sure that requests that span that bridge work
 '''
 
 
@@ -569,6 +569,11 @@ def coords_to_offsets( ra, dec, field_size, coords, sid=None ):
     coords = np.array(coords)
     # convert field_size from arcseconds to arcminutes
     f_s = field_size/60.
+    # DSS image servers break if given exactly RA=0 or Dec=0
+    if ra == 0:
+        ra = 0.000001
+    if dec == 0:
+        ra = 0.000001
     
     if sid == None:
         # write out the coordinates to a temporary file
@@ -579,8 +584,8 @@ def coords_to_offsets( ra, dec, field_size, coords, sid=None ):
         # get the fits file to pull out the header info
         fitsfile = app.root_path + '/tmp/' + tmp_id + '.fits'
         #fitsfile = 'tmp/'+tmp_id+'.fits'
-        res = Popen( 'wget "http://archive.stsci.edu/cgi-bin/dss_search?v=3&r={}&d={}'.format( ra, dec )+\
-                      '&h={}&w={}&f=fits&c=none&fov=NONE&e=J2000" -O '.format( f_s, f_s ) + fitsfile, shell=True )
+        res = Popen( 'wget "http://archive.stsci.edu/cgi-bin/dss_search?v=3&r={:.8f}&d={:.8f}'.format( ra, dec )+\
+                      '&h={:.8f}&w={:.8f}&f=fits&c=none&fov=NONE&e=J2000" -O '.format( f_s, f_s ) + fitsfile, shell=True )
         res.communicate() # to block until downlaod is done
     else:
         coordsfile = app.root_path + '/tmp/' + sid + '_coords.txt'
@@ -588,16 +593,22 @@ def coords_to_offsets( ra, dec, field_size, coords, sid=None ):
         # if we've already saved this image, just use the loaded one
         if not os.path.exists(coordsfile) or not os.path.exists(fitsfile):
             np.savetxt( coordsfile, coords )
-            res = Popen( 'wget "http://archive.stsci.edu/cgi-bin/dss_search?v=3&r={}&d={}'.format( ra, dec )+\
-                          '&h={}&w={}&f=fits&c=none&fov=NONE&e=J2000" -O '.format( f_s, f_s ) + fitsfile, shell=True )
+            res = Popen( 'wget "http://archive.stsci.edu/cgi-bin/dss_search?v=3&r={:.8f}&d={:.8f}'.format( ra, dec )+\
+                          '&h={:.8f}&w={:.8f}&f=fits&c=none&fov=NONE&e=J2000" -O '.format( f_s, f_s ) + fitsfile, shell=True )
             res.communicate() # to block until downlaod is done
     # get image pixel size
-    header = pyfits.open( fitsfile )[0].header
+    try:
+        header = pyfits.open( fitsfile )[0].header
+    except:
+        raise IOError('Error grabbing fits file from DSS')
     xsize = header['NAXIS1']
     ysize = header['NAXIS2']
+    #import pdb; pdb.set_trace()
     # use sky2xy to get final coordinates
     res = Popen( 'sky2xy '+fitsfile+' @'+coordsfile, stderr=PIPE, stdout=PIPE, shell=True )
     o,e = res.communicate()
+    if e or not o:
+        raise IOError('Error trying to run sky2xy') 
     # parse the output to get the actual pixel values
     offsets = []
     for line in o.split('\n'):

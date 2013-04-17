@@ -7,27 +7,36 @@
   <div class="row-fluid">
 	<div class="span12">
       <div class="hero-unit">
-		<h3>Welcome to PhotoZPE, the All-Sky Photometric Zeropoint Estimation Engine.</h3>
-		<p> This site uses a all-sky catalogs along with synthetic photometry 
-			to produce photometric observations or estimates of sources across the entire sky
-			in <i>u, g, r, i, z, y, B, V, R, I, J, H</i> &amp; <i>K</i> passbands. The main
-			goal of this site is to provide a robust and simple way to estimate photometric 
-			zeropoints of an astronomical image for any band in any part of the sky.<br>
+		<h3>PhotoZPE: an All-Sky Photometric Zeropoint Estimation Engine.</h3>
+		<p> This site uses all-sky catalogs and synthetic photometry 
+			to produce the photometric magnitude of stars anywhere on the sky in a set
+			of the most commonly-used passbands. We use cataloged observations if they exist,
+			and provide modeled estimates if they don't. <br>
+			The goal: to provide a robust and simple way to estimate the photometric 
+			zeropoint of an astronomical image for any band in any part of the sky.<br>
 			Please read the <a href="{{ url_for('show_info') }}">info page</a> for
 			a complete description, a discussion of errors,	and a few examples. <br><br>
 		
-			Please contact me with any questions.<br>
+			Contact me with any questions!<br>
 			-<a target="_blank" href="http://astro.berkeley.edu/~ishivvers/">Isaac Shivvers</a> <br>
 			 <i>ishivvers (at) astro (dot) berkeley (dot) edu</i>
 			</p><br>
 			
+			{% if feedback %}
+			<div class="row-fluid">
+		      <div class="span6 offset3">
+			    <h3 style="color:#DF0101"> {{ feedback }} </h3>
+			  </div><!--/span-->
+			</div><!--/row-->
+			{% endif %}
+			
 			{% if not mode %}
 			{# only show this request box if we haven't already put in a request below #}
 			<div class="row-fluid">
-				<div class="span6 offset3">
-				<strong>Usage:</strong>
-				<p>Enter an RA and Dec, in decimal degrees, and field size
-					in arcseconds. Note: maximum field size is 1&deg; (3600"), and
+			  <div class="span6 offset3">
+				<strong>How to use PhotoZPE:</strong>
+				<p>Enter RA and Dec (decimal degrees) and field size (arcseconds)
+					Maximum field size is 1&deg; (3600") per request, and
 					large requests may take up to a minute to process.</p>
 				<form class="form-inline" method="POST">
 				  <input type="text" name="RA" class="input-small" placeholder="RA (&deg;)">
@@ -36,16 +45,16 @@
 				  <input type="hidden" name="mode" value="1">
 				  <br><input type="submit" class="btn btn-primary" value="Submit"/>
 				</form>
-				</div><!--/span-->
+			  </div><!--/span-->
 			</div><!--/row-->
 			{% endif %}
 
 			{% if mode %}
 			{# ask for confirmation if a file was uploaded #}
 			<div class="row-fluid">
-		      <div class="span8 offset2">
+		      <div class="span6 offset3">
 				<hr>
-				  <p>Verify that the file uploaded correctly and click Continue.<br></p>
+				  <p>Please verify that the file uploaded correctly and click Continue.<br></p>
 				  <table class="table table-condensed">
 				    <tr><td><b>RA</b></td>
 					<td><b>DEC</b></td>
@@ -67,32 +76,24 @@
 			  </div><!--/row-->
 			  {% endif %}
 
-		      {% if feedback %}
-			<div class="row-fluid">
-		      <div class="span8 offset2">
-			    <h3> {{ feedback }} </h3>
-				</div><!--/span-->
-			  </div><!--/row-->
-			  {% endif %}
-
 	    </div><!--/hero-->
   	  </div><!--/span-->
 	</div><!--/row-->
 	<div class="row-fluid">
 		<div class="span4">
-			<h3>Other usages:</h3>
+			<h3>Other use cases:</h3>
 			<p>This site can also produce matched catalogs and zeropoints of uploaded star lists - see
 				submission forms to the right.  These both require space-separated or tab-separated
-				ASCII files with no blank lines (use # to comment out lines), with all coordinates in 
+				ASCII files with no blank lines (# for comments), with all coordinates in 
 				decimal degrees. Designed for stars grouped together in a field and limited to fields
-				of 1&deg; (3600") or less.
+				spanning 1&deg; (3600") or less.
 				<br><br>
 			   There is also an API, for automated queries using a program like <code>curl</code> or <code>wget</code>.
 			    See <a href="{{ url_for('show_info') }}#api" >here</a> for more information.
 		</div><!--/span-->
 		<div class="span4">
 			<h3>Catalog Matching</h3>
-			<p>Upload a star list with RA and Dec (in decimal degrees) as the first two columns.</p>
+			<p>Upload a star list with RA and Dec (decimal degrees) as the first two columns.</p>
 			<form action="upload" method="POST" enctype="multipart/form-data">
 			<div class="fileupload fileupload-new" data-provides="fileupload">
 			  <span class="btn btn-file"><span class="fileupload-new">Select file</span>
@@ -106,9 +107,8 @@
 		</div><!--/span-->
 		<div class="span4">
 			<h3>Catalog Matching + <br>Zeropoint Estimate</h3>
-			<p>Upload a star list with RA and Dec (in decimal degrees) as the first two columns,
-				instrumental magnitudes as the third, and select the
-				observed passband from the drop-down menu.</p>
+			<p>Upload a star list with RA and Dec (decimal degrees) as the first two columns,
+				instrumental magnitudes as the third, and select the passband observed.</p>
 			<form action="upload" method="POST" enctype="multipart/form-data">
 	    	  <div class="fileupload fileupload-new" data-provides="fileupload">
 			    <span class="btn btn-file"><span class="fileupload-new">Select file</span>

@@ -2,11 +2,10 @@
 
 {% block content2 %}
 <div class="row-fluid">
- <div class="span8">
-  <h2 id="bestfit">Best-fit stellar type: --   </h2> <!--&chi;<sup>2</sup> -- </h2> -->
-  <!-- <h3 id="chi">&chi;<sup>2</sup> -- </h3> -->
+ <div class="span12">
+  <h2 id="bestfit">Best-fit stellar type: --   </h2>
   <div class="row-fluid">
-  <div class="span6">
+  <div class="span4">
     <h3>AB Magnitudes</h3>
 		<table class="table table-condensed">
 			<tr><td><b>Band</b></td>
@@ -27,7 +26,7 @@
 				<td>-</td><td>-</td><td>-</td></tr>
 		</table>
 	</div>
-	<div class="span6">
+	<div class="span4">
 		<h3>Vega Magnitudes</h3>
 		<table class="table table-condensed">
 			<tr><td><b>Band</b></td>
@@ -50,24 +49,23 @@
 				<td>-</td><td>-</td><td>-</td></tr>
 		</table>
     </div><!--/span-->
-   </div><!--/row-->
-  </div><!--/span-->
-  <div class="span4">
+    <div class="span4">
     <h2>{{band}} Zeropoint: {{zp}} <sup>&plusmn;{{mad}}</sup></h2>
         <div id="histogram">
 		  <!-- draw the histogram here -->
 		</div>
 		<p>
-			Click below to download a full computer-readable (space-separated) ASCII catalog,
-			including all magnitudes and errors, for these sources.
-            <br>
-            <strong>Note:</strong> only the first 500 sources are included in the interface
-            above, but the catalog includes all sources found in the field.
+			Download a text catalog of these results.
+			<br>
+			<b>Note:</b> only the first 500 sources are displayed
+			above, but the catalog includes all sources found in the field.
 		</p>
 		<form method="get" action="{{ url_for('serve_full_catalog') }}">
 		<input type="submit" class="btn btn-primary btn-small" value="Download"/>
 		</form>
-  </div><!--/span-->
+     </div><!--/span-->
+   </div><!--/row-->
+ </div><!--/span12-->
 </div><!--/row-->
 {% endblock %}
 

@@ -102,7 +102,7 @@ def show_info():
     return render_template( "info.html" )
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/photozpe', methods=['GET', 'POST'])
 def home():
     # homepage simply points to upload
     return redirect(url_for('show_upload'))

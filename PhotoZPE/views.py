@@ -6,6 +6,7 @@ from time import time, strftime
 import json
 import re
 import os
+from os.path import join, dirname
 import pyfits
 import pymongo as pm
 from subprocess import Popen, PIPE
@@ -14,10 +15,11 @@ from my_code import get_SEDs as gs
 
 '''
 TO DO:
- - get RA, Dec == 0.  -> 0.00001
- - make sure that requests that span that bridge work
++ Include a mode 2 for APASS
++ Include a quick way to disallow
+  USNOB
++ replace mode 1 (USNOB) with mode 2 (APASS)
 '''
-
 
 ############################################
 # DEFINITIONS AND INITIALIZATIONS
@@ -32,7 +34,7 @@ FILTER_PARAMS = gs.FILTER_PARAMS
 #  the app hasn't yet been configured when this stuff is imported
 spectra_folder = '/static/spectra/'
 try:
-    MODELS = np.load( app.root_path+spectra_folder+'all_models.npy' )
+    MODELS = np.load( join(dirname(gs.__file__), 'all_models.npy') )
 except:
     raise IOError('cannot find models file')
 # convert the MODELS np array into a dictionary of arrays, so we can call by index (faster)
@@ -42,20 +44,20 @@ for model in MODELS[1:]:
 del(MODELS) #just to free memory
 
 try:
-    SPEC_TYPES = np.loadtxt( app.root_path+spectra_folder+'pickles_types.txt', dtype=str )
+    SPEC_TYPES = np.loadtxt( join(dirname(gs.__file__), 'pickles_types.txt'), dtype=str )
 except:
     raise IOError('cannot find spectral types file')
 
 # SPEC_DICT contains all Pickles spectra in FLAM, as well as one array of lambda (Angstrom)
 SPEC_DICT = {}
 try:
-    spec_files = os.listdir( app.root_path+spectra_folder )
+    spec_files = os.listdir( join(dirname(gs.__file__), 'model_spectra') )
     for fn in spec_files:
         try:
             n = int( re.findall('\d+', fn)[0] )
         except:
             continue
-        data = np.load( app.root_path+spectra_folder+fn )
+        data = np.load( join(dirname(gs.__file__), 'model_spectra', fn) )
         SPEC_DICT[n] = data[1]
         if n == 1:
             SPEC_DICT['lam'] = data[0]

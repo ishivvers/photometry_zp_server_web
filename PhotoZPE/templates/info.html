@@ -4,48 +4,64 @@
 
 {% block content %}
 <div class="container">
-  <div class="row-fluid">
-	<div class="span12">
-      <div class="hero-unit">
-	  <h2>Photometric Estimates</h2>
+ <div class="row-fluid">
+		
+    <div class="span12">
+      <div class="hero-unit" data-spy="scroll" data-target="#navbarExample" data-offset="50">
+	  <section id="PhotometricEstimates">
+	  <h2>Photometric Estimates and Zeropoint Offsets</h2>
 	   <p>This site was designed to produce accurate estimates of the 
-		  photometric zeropoint between a set of observations (instrumental magnitudes)
-		  and the standard photometric systems of <a target="_blank" href="http://www.sdss.org/">SDSS</a>, 
-	 	  <a target="_blank" href="http://tdc-www.harvard.edu/catalogs/ub1.html">USNOB1</a>, and 
- 	      <a target="_blank" href="http://www.ipac.caltech.edu/2mass/overview/about2mass.html">2-MASS</a>.
-		  We do this by cross-matching sources from the 2-MASS catalog to sources in the SDSS catalog 
-		  (if within <a target="_blank" href="http://www.sdss.org/dr7/coverage/">the SDSS footprint</a>)
-		  or the all-sky USNO-B1 catalog, determining (for each source) a best-fit stellar spectrum from the
+		  photometric zeropoint offset between a set of observations (instrumental magnitudes) taken anywhere on the sky
+		  and a few standard photometric systems (i.e. <a target="_blank" href="http://www.sdss.org/">SDSS</a>, 
+		  <a target="_blank" href="http://www.aavso.org/apass">APASS</a>, 
+	 	  <a target="_blank" href="http://tdc-www.harvard.edu/catalogs/ub1.html">USNOB1</a>, 
+ 	      <a target="_blank" href="http://www.ipac.caltech.edu/2mass/overview/about2mass.html">2-MASS</a>).
+		  The zeropoint determines the connection between an astronomical image and
+		  a standard photometric system. For any single passband, m = -2.5 x log<sub>10</sub>(count rate) + zeropoint.
+		  For any image that includes sources with previously well-measured magnitudes in the passband, you can calculate
+		  the zeropoint for the entire image by comparing the count rate of those sources to their previously-measured magnitudes
+		  and then apply that zeropoint to all the sources in the image.
+		  The problem is that there are very often no available measures of a given field in the passband of interest.
+		  There are, however, a few catalogs that cover most of the sky in a few passbands, and we can do a pretty
+		  good job estimating any given source's brightness in any other passband based on it's catalogued brightnesses.
+		</p>
+		<p>
+		  In detail, we do this by we cross-matching sources from the 2-MASS catalog to sources in the SDSS catalog 
+		  (if within <a target="_blank" href="http://www.sdss.org/dr7/coverage/">the SDSS footprint</a>), the 
+		  APASS all-sky catalog, or the all-sky USNO-B1 catalog, then determining (for each source) a best-fit stellar spectrum from the
 		  <a target="_blank" href="http://www.stsci.edu/hst/observatory/cdbs/pickles_atlas.html">Pickles Stellar Atlas</a>,
-		  and producing synthetic photometry to augment the observed photometry in the catalogs. These photometric estimates
-		  can then be used on a per-source basis or used to calculate a systematic offset between observed magnitudes (e.g. the instrumental
-		  magnitudes generated through photometry on images) and the true magnitudes for a set of observations;
-		  i.e. the photometric zeropoint.  Note: <i>u, g, r, i, z</i> &amp; <i>y</i> photometry are reported as AB magnitudes,
+		  and then producing synthetic photometry to augment the observed photometry in the catalogs. These photometric estimates
+		  can then be used on a per-source basis or used to calculate a systematic offset between observed count rates 
+		  and magnitudes in a standard photometric, i.e. the photometric zeropoint.
+		  Note: <i>u, g, r, i, z</i> &amp; <i>y</i> are reported as AB magnitudes,
 		  while <i>J, H, K, B, V, R</i> &amp; <i>I</i> are Vega magnitudes.
 	   </p>
-
+	  </section>
+	
 	  <hr>	
+	  <section id="CharacteristicErrors">
 	  <h2>Characteristic Errors</h2>
 	   <p>Though the estimates for individual sources can, at worst, have errors as large
 		  as 0.5 mag or more, we have worked to get the median offset for any ensemble of
-		  sources as close to zero as possible to facilitate accurate zeropoint determinations.
-		  For any field with more than a few tens of sources, the systematic errors dominate
-		  over statistical errors, and so we provide two important measurements of error: the photometric
+		  sources as close to zero as possible.
+		  For any field with more than a few tens of sources, the systematic errors of the median dominate
+		  over statistical errors, and so we provide two important estimates of error: the photometric
 		  error for each individual source (reported on the Results page and in downloaded catalogs)
-		  and a systematic error of the median of a field for each passband, reported below.
+		  and a characteristic offset of the median for a set of sources in each modeled passband, reported below.
+		  <br>
 		  The following discussion assumes a Gaussian error distribution, and all reported errors
-		  represent deviations of 1-&sigma;.  Our error estimates make use of data from
+		  represent deviations of 1&sigma; (68&#37; CL).  Our error estimates make use of data from
   		  <a target="_blank" href="http://www.ukidss.org/">UKIDSS</a> and the 
 		  <a target="_blank" href="http://www2.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/community/STETSON/standards/">Stetson standard star fields</a>,
-		  in addition to SDSS, USNO-B1, and 2-MASS photometry.
+		  in addition to SDSS, USNO-B1, APASS, and 2-MASS photometry.
 		  Note that the errors are much smaller for mid-optical bands
-		  (<i>i, z, y, I</i>) than the bluer bands - please be aware of the errors at the blue end!<br>
+		  (<i>i, z, y, R, I</i>) than the bluer bands - please be aware of the errors at the blue end!<br>
 		
 		<h3>Single-source Errors</h3>
 		 <p>The per-passband errors for each source were determined by producing a modeled catalog
 			for fields with published photometry and comparing the estimated photometry
-			to observed photometry for each source, assuming published measurement errors are negligible compared
-			to modeling errors. The 1-&sigma; error for each passband was averaged over several fields 
+			to published photometry for each source, assuming published measurement errors are negligible compared
+			to modeling errors. The 1&sigma; error for each passband was averaged over several fields 
 			and parameterized as a function of model fit &chi;<sup>2</sup>.  That parameterization
 			is then used to estimate the error for any model as a function of &chi;<sup>2</sup>.
 			
@@ -55,22 +71,21 @@
 			Errors in modeled <i>B, V, R, I</i> were determined by comparing modeled photometry to Stetson photometry
 			in five fields within SDSS Stripe 82, chosen for their size (L112, L113, L92, L95, PG0231).
 		</p>
-		
 		<h3>Field-wide Systematic Errors</h3>
-		
-		  <strong>Inside the SDSS footprint (reported as mode 0).</strong><br>
+		  <strong>Mode 0: based on SDSS photometry.</strong><br>
 		  The errors below are compiled
-		  from a set of 5 arbitrary 1.0&deg; fields in the SDSS Stripe 82 footprint, modeled using SDSS and 2-MASS
+		  from a set of 5 arbitrary 1.0&deg; fields in SDSS Stripe 82, modeled using SDSS and 2-MASS
 		  observations. The SDSS and 2-MASS photometry that informs these models is well-calibrated
-		  across fields, and so the systematic errors within the SDSS footprint are small.
+		  across fields, and so the systematic errors are small. Of course,
+		  this mode is only available within the SDSS footprint.
 		
 		<div class="row-fluid">
 			<div class="span6 offset3">
 				<br>
 		  <table class="table table-condensed table-center">
 			<tr><td><b>Band</b></td>
-				<td><b>1-&sigma; error of the Median (mag)</b></td>
-				<td><b>Photometry Source</b></td></tr>
+				<td><b>1&sigma; error of the Median (mag)</b></td>
+				<td><b>Comparison Photometry</b></td></tr>
 			<tr><td>y</td>
 				<td>0.03</td>
 				<td>UKIDSS</td></tr>
@@ -87,31 +102,79 @@
 				<td>0.07</td>
 				<td>Stetson</td></tr>
 		  </table>
-			</div><!--/span-->
+		</div><!--/span-->
 		</div><!--/row-->
 		  <div class="row-fluid">
 			<div class="span10 offset1 pagination-centered">
-			  <img src="static/img/sdss_ukidss_errs_hist_y.png" width=400 height=400 alt="y error histogram">
-			  <img src="static/img/sdss_stetson_errs_hist_I.png" width=400 height=400 alt="I error histogram">
+			  <img src="static/img/sdss_errs_hist_y.png" width=400 height=400 alt="y error histogram">
+			  <img src="static/img/sdss_errs_hist_I.png" width=400 height=400 alt="I error histogram">
 			  <p small>Histograms of the differences between modeled and observed <i>y</i> and <i>I</i> 
-				magnitudes for sources in 5 arbitrary fields and models using SDSS and 2-MASS observations.</p>
+				magnitudes for sources in 5 arbitrary fields. Models based upon SDSS and 2-MASS observations.</p>
 			</div><!--/span-->
 		  </div><!--/row-->
-
-		<br>
-		  <strong>Outside the SDSS footprint (reported as mode 1).</strong><br>
-		  The errors below are compiled
-		  from the same five fields as above (for <i>u, g, r, i, z, y</i>) and from Stetson standard fields 
-		  (for <i>V, I</i>), but modeled using USNO-B1 and 2-MASS observations. Systematic errors between
-		  fields can be quite large in the USNO-B1 catalog, which is reflected in the significantly higher
-		  errors reported for sources outside of the SDSS footprint.
+		
+		<strong>Mode 1: based on APASS photometry.</strong><br>
+		The errors below are compiled for the same five Stripe 82 fields as above (for <i>u, z, y</i>) and from
+		Stetson standard fields (for <i>R, I</i>), but are based on APASS and 2-MASS photometry. This mode
+		is available anywhere APASS has coverage (~97&#37; of the sky), though at much lower density than
+		modes 0 or 2 (APASS does not go as deep as either SDSS or USNOB-1).
+		
 		<div class="row-fluid">
 			<div class="span6 offset3">
 				<br>
 		  <table class="table table-condensed table-center">
 			<tr><td><b>Band</b></td>
-				<td><b>1-&sigma; error of the Median (mag)</b></td>
-				<td><b>Photometry Source</b></td></tr>
+				<td><b>1&sigma; error of the Median (mag)</b></td>
+				<td><b>Comparison Photometry</b></td></tr>
+			<tr><td>y</td>
+				<td>0.04</td>
+				<td>UKIDSS</td></tr>
+			<tr><td>z</td>
+				<td>0.05</td>
+				<td>SDSS</td></tr>
+			<tr><td>R</td>
+				<td>0.03</td>
+				<td>Stetson</td></tr>
+			<tr><td>I</td>
+				<td>0.02</td>
+				<td>Stetson</td></tr>
+			<tr><td>u</td>
+				<td>0.13</td>
+				<td>SDSS</td></tr>
+		  </table>
+		</div><!--/span-->
+	  </div><!--/row-->
+		
+	  <div class="row-fluid">
+		<div class="span10 offset1 pagination-centered">
+		  <img src="static/img/apass_errs_hist_y.png" width=400 height=400 alt="y error histogram">
+		  <img src="static/img/apass_errs_hist_z.png" width=400 height=400 alt="z error histogram">
+		  <img src="static/img/apass_errs_hist_I.png" width=400 height=400 alt="I error histogram">
+		  <p small>Histograms of the differences between modeled and observed <i>y</i>, <i>z</i> and <i>I</i> 
+			magnitudes for sources in 5 arbitrary fields. Models based upon APASS and 2-MASS observations.</p>
+		</div><!--/span-->
+	  </div><!--/row-->
+		
+
+		<br>
+		  <strong>Mode 2: based on USNOB-1 photometry.</strong><br>
+		  The errors below are compiled from the same five Stripe 82 fields as above (for <i>u, g, r, i, z, y</i>) and from Stetson standard fields 
+		  (for <i>V, I</i>), but based on USNO-B1 and 2-MASS observations. Systematic errors between
+		  fields can be quite large in the USNO-B1 catalog, which is reflected in the significantly higher
+		  errors reported here. Because of these relatively large errors,
+		  we've provided an easy way to exclude any results based on USNOB-1 photometry: simply uncheck the box
+		  that says "Include USNOB-1."  Note, however, that this will dramatically reduce the number of sources
+		  returned when outside of the SDSS footprint, since the limiting magnitude of APASS is ~2 mag brighter
+		  than USNOB-1.  We recommend using using Mode 2 results only if there are ~10 or fewer Mode 1 or Mode 2 
+		  results available.  This mode is available more-or-less all-sky.
+		  
+		<div class="row-fluid">
+			<div class="span6 offset3">
+				<br>
+		  <table class="table table-condensed table-center">
+			<tr><td><b>Band</b></td>
+				<td><b>1&sigma; error of the Median (mag)</b></td>
+				<td><b>Comparison Photometry</b></td></tr>
 			<tr><td>y</td>
 				<td>0.03</td>
 				<td>UKIDSS</td></tr>
@@ -139,24 +202,25 @@
 	      </table>
 	     </div><!--/span-->
 		</div><!--/row-->
-		  <div class="row-fluid">
-			<div class="span10 offset1 pagination-centered">
-			  <img src="static/img/nosdss_ukidss_errs_hist_y.png" width=400 height=400 alt="y error histogram">
-			  <img src="static/img/sdss_errs_hist_z.png" width=400 height=400 alt="z error histogram">
-			  <img src="static/img/nosdss_stetson_errs_hist_I.png" width=400 height=400 alt="I error histogram">
+		<div class="row-fluid">
+		    <div class="span10 offset1 pagination-centered">
+			  <img src="static/img/usnob_errs_hist_y.png" width=400 height=400 alt="y error histogram">
+			  <img src="static/img/usnob_errs_hist_z.png" width=400 height=400 alt="z error histogram">
+			  <img src="static/img/usnob_errs_hist_I.png" width=400 height=400 alt="I error histogram">
 			  <p>Histograms of the differences between predicted and true values for <i>y</i>,
-				<i>z</i>, and <i>I</i> magnitudes for sources in 5 arbitrary fields and modeled
-				using USNO-B1 and 2-MASS observations. </p>
+				<i>z</i>, and <i>I</i> magnitudes for sources in 5 arbitrary fields. Models
+				based upon USNO-B1 and 2-MASS observations.</p>
 			</div><!--/span-->
 		</div><!--/row-->
 		<!-- Insert discussion of built-in errors with SDSS/USNOB1/APASS -->
+		</section>
 		
-		<a name="api"></a><hr>
+		<section id="api">
 		<h2>API</h2>
 		<p>
 		  This site offers an API as a webservice, so you can run interact with it programatically.
 		  Requests are sent as a URL over HTTP, and the results can be obtained
-		  in either JSON or a simple ASCII table format.  The same three modes of operation are available
+		  in either JSON or a simple ASCII table format.  The same three methods of operation are available
 		  through the API as through the main website, and the website interface can be used to examine
 		  the results of any API request made within the last day.  Any posted files must be simple ASCII 
 		  tables, with the first two columns RA and Dec (decimal degrees), and a third column of instrumental
@@ -168,7 +232,7 @@
 			 <i>Produce a catalog of a specific field.</i><br>
 			  <strong>Required:</strong>
 			  <ul>
-				<li><b>mode:</b> 1</li>
+				<li><b>method:</b> 1</li>
 				<li><b>ra:</b> RA in decimal degrees</li>
 				<li><b>dec:</b> DEC in decimal degrees</li>
 				<li><b>size:</b> Field size in arcseconds (max: 3600")</li>
@@ -178,7 +242,7 @@
 			<li><b>response:</b> ascii (default) or json</li>
 		  </ul>
 		  <strong>Example:</strong><br>
-			<code>curl 'http://classy.astro.berkeley.edu/api?mode=1&amp;ra=200.&amp;dec=20.&amp;size=450.&amp;response=ascii'</code>
+			<code>curl 'http://classy.astro.berkeley.edu/api?method=1&amp;ra=200.&amp;dec=20.&amp;size=450.&amp;response=ascii'</code>
 		  </div><!--/span-->
 		</div><!--/row-->
 		
@@ -188,7 +252,7 @@
 			<i>Produce a catalog for a set of stars.</i><br>
 			  <strong>Required:</strong>
 			  <ul>
-				<li><b>mode:</b> 2</li>
+				<li><b>method:</b> 2</li>
 				<li><b>posted star list</b> (total size &lt; 3600")</li>
 			  </ul>
 			  <strong>Optional:</strong>
@@ -196,7 +260,7 @@
 				<li><b>response:</b> ascii (default) or json</li>
 			  </ul>
 			  <strong>Example:</strong><br>
-				<code>curl -F source_file=@YOUR_FILE 'http://classy.astro.berkeley.edu/api?mode=2&amp;response=ascii'</code>
+				<code>curl -F source_file=@YOUR_FILE 'http://classy.astro.berkeley.edu/api?method=2&amp;response=ascii'</code>
 		  </div> <!--/span-->
 		</div><!--/row-->
 		
@@ -206,7 +270,7 @@
 			<i>Produce a catalog and a photometric zeropoint for a set of observations.</i><br>
 			  <strong>Required:</strong>
 			  <ul>
-				<li><b>mode:</b> 3</li>
+				<li><b>method:</b> 3</li>
 				<li><b>band:</b> Passband of observations</li>
 				<li><b>posted star list</b> (total size &lt; 3600")</li>
 			  </ul>
@@ -215,25 +279,26 @@
 				<li><b>response:</b> ascii (default) or json</li>
 			  </ul>
 			  <strong>Example:</strong><br>
-				<code>curl -F source_file=@YOUR_FILE 'http://classy.astro.berkeley.edu/api?mode=3&amp;band=y&amp;response=ascii'</code>
+				<code>curl -F source_file=@YOUR_FILE 'http://classy.astro.berkeley.edu/api?method=3&amp;band=y&amp;response=ascii'</code>
 		  </div> <!--/span-->
 		</div><!--/row-->
-		<div class="row-fluid">
-			<h3>Examining API results:</h3>
-			<p>Each API response includes a string of numbers called the "Query ID", which looks something like
-				 "1360698575_1157" - this allows you to examine the results of any API call through the full web interface.
-				To inspect the catalog, pass your Query ID as a
-			   URL query string to the Results page with the keyword 'sid'.  Note: only works for queries made within 
-			   the last day or so.
-			</p>
-			<strong>Example:</strong><br>
-			  <code>http://classy.astro.berkeley.edu/results?sid=YOUR_QUERY_ID</code>
-		</div><!--/row-->
-		<div class="row-fluid">
+
+		<h3>Examining API results:</h3>
+		<p>Each API response includes a string of numbers called the "Query ID", which looks something like
+			 "1360698575_1157" - this allows you to examine the results of any API call through the full web interface.
+			To inspect the catalog, pass your Query ID as a
+		   URL query string to the Results page with the keyword 'sid'.  Note: only works for queries made within 
+		   the last day or so.
+		</p>
+		<strong>Example:</strong><br>
+		  <code>http://classy.astro.berkeley.edu/results?sid=YOUR_QUERY_ID</code>
+		</section>
+		
+		<section id="Development">
 		<hr>
 		<h2>Open-Source Development</h2>
 		<p>
-		  This project uses a bunch of awesome open-source software and web development tools:
+		  This project gratefully uses several open-source software and web development tools:
 		  <ul>
 			<li><a target="_blank" href="http://www.python.org/">Python</a>, <a target="_blank" href="http://www.numpy.org/">NumPy</a>, <a target="_blank" href="http://www.scipy.org/">SciPy</a></li>
 			<li><a target="_blank" href="https://github.com/">GitHub</a></li>
@@ -248,6 +313,9 @@
 		  have any comments or suggestions, simply shoot me an email - I'd like to hear from you! <br>
 		  <i>ishivvers (at) astro (dot) berkeley (dot) edu</i>
 		</p>
+		</section>
+		
+		<section id="Acknowledgements">
 		<hr>
 		<h2>Affiliations &amp; Acknowledgements</h2>
 		<p> Codebase and site developed by <a target="_blank" href="http://astro.berkeley.edu/~ishivvers/">Isaac Shivvers</a>
@@ -255,15 +323,18 @@
 			 Adam Miller, Chris Klein, Brad Cenko, Ori Fox, Dan Starr, Joey Richards), and a huge thanks to Bill Boyd for computational
 			 resources and assistance.
 		</p>
+		<div class="row-fluid">
 		<div class="span12 pagination-centered">
-		<a target="_blank" href="http://astro.berkeley.edu/">
-		<img src="static/img/berkeley_seal_T.gif" width=150 height=150 alt="UC Berkeley"></a>
-		<a target="_blank" href="http://cftd.info/">
-		<img src="static/img/cftdi_bg.png" width=320 height=160 alt="CfTDI"></a>
-		<a target="_blank" href="http://www.nsf.gov/">
-		<img src="static/img/nsf_logo.gif" width=160 height=160 alt="NSF"></a>
-		</div><!--/span-->
-		</div><!--/row-->
+			<a target="_blank" href="http://astro.berkeley.edu/">
+			<img src="static/img/berkeley_seal_T.gif" width=150 height=150 alt="UC Berkeley"></a>
+			<a target="_blank" href="http://cftd.info/">
+			<img src="static/img/cftdi_bg.png" width=320 height=160 alt="CfTDI"></a>
+			<a target="_blank" href="http://www.nsf.gov/">
+			<img src="static/img/nsf_logo.gif" width=160 height=160 alt="NSF"></a>
+		</div> <!--/span-->
+		</div> <!--/row-->
+		</section>
+		
 	  </div><!--/hero-->
   	</div><!--/span-->
   </div><!--/row-->

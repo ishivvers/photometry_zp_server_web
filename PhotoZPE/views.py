@@ -15,10 +15,7 @@ from my_code import get_SEDs as gs
 
 '''
 TO DO:
-+ Include a mode 2 for APASS
-+ Include a quick way to disallow
-  USNOB
-+ replace mode 1 (USNOB) with mode 2 (APASS)
++ Test allow_usnob interface for website and curl
 '''
 
 ############################################
@@ -63,6 +60,11 @@ try:
             SPEC_DICT['lam'] = data[0]
 except:
     raise IOError('cannot find spectra files')
+# go through and truncate all spectra to lambda > 2500A
+for spec in SPEC_DICT.keys():
+    if 'lam' == spec: continue
+    SPEC_DICT[spec] = SPEC_DICT[spec][ SPEC_DICT['lam']>2500 ]
+SPEC_DICT['lam'] = SPEC_DICT['lam'][ SPEC_DICT['lam']>2500 ]
     
 
 # initialize the database
@@ -130,8 +132,13 @@ def show_upload():
         return render_template( "upload.html", feedback=feedback )
     else:
         # see which mode we're in
-        mode = int(request.form['mode'])
-        if mode == 1:
+        method = int(request.form['method'])
+        if 'allow_usnob' in request.form.keys():
+            allow_usnob = True
+        else:
+            allow_usnob = False
+        
+        if method == 1:
             # produce catalog for single field
             #  first test whether ra,dec, and fs pass muster:
             try:
@@ -147,7 +154,8 @@ def show_upload():
             # if all's good, create the collection and populate it
             data = ra, dec, fs
             coll = create_collection()
-            coll.insert( {"entry":"mode", "mode":mode} )
+            coll.insert( {"entry":"method", "method":method} )
+            coll.insert( {"entry":"allow_usnob", "allow_usnob":allow_usnob} )
             coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":fs} )
             # and take them straight to the results
             return redirect(url_for('show_results'))
@@ -172,21 +180,23 @@ def show_upload():
                 return render_template( "upload.html", feedback="File upload failed! Make sure the file " + \
                                                             "is a properly-formatted ASCII file that ends in .txt.")
             
-            if mode == 2:
+            if method == 2:
                 # create matched catalog
                 # if all's good, create the collection and populate it
                 coll = create_collection()
-                coll.insert( {"entry":"mode", "mode":mode} )
+                coll.insert( {"entry":"method", "method":method} )
+                coll.insert( {"entry":"allow_usnob", "allow_usnob":allow_usnob} )
                 for row in data:
                     coll["requested_sources"].insert( {"ra":row[0], "dec":row[1] })
                 # have the user check that the file uploaded correctly
                 return render_template( "upload.html", mode=mode, data=data[:5] )
-            elif mode == 3:
+            elif method == 3:
                 # produce matched catalog and zeropoint estimate
                 # if all's good, create the collection and populate it
                 band = request.form["band"]
                 coll = create_collection()
-                coll.insert( {"entry":"mode", "mode":mode} )
+                coll.insert( {"entry":"method", "method":method} )
+                coll.insert( {"entry":"allow_usnob", "allow_usnob":allow_usnob} )
                 coll.insert( {"entry":"passband", "passband":band} )
                 for row in data:
                     coll["requested_sources"].insert( {"ra":row[0], "dec":row[1], "inst_mag":row[2] })
@@ -394,7 +404,7 @@ def show_results():
             return redirect(url_for('show_upload'))
     try:
         # if database entry not found, shunt them back to upload
-        mode = coll.find_one( {"entry":"mode"} )['mode']
+        method = coll.find_one( {"entry":"method"} )['method']
     except:
         session['feedback'] = "Error: Could not find query results in database, please submit a new request."
         return redirect(url_for('show_upload'))
@@ -418,10 +428,10 @@ def show_results():
         send_coords = []
         for i in range(len(coords)):
             send_coords.append( [coords[i][0], coords[i][1], offsets[i][0], offsets[i][1], model_indices[i], i] )
-        if (mode == 1) or (mode == 2):
+        if (method == 1) or (method == 2):
             return render_template( "results12.html", coords=json.dumps(send_coords),\
                                     field_center=json.dumps([ra,dec]), field_width=str(fs/60.))
-        elif mode == 3:
+        elif method == 3:
             band = coll.find_one( {"entry":"passband"} )["passband"]
             zp_est = coll.find_one( {"entry":"zeropoint_estimate"})["zp"]
             zp_mad = coll.find_one( {"entry":"zeropoint_estimate"})["mad"]
@@ -429,13 +439,18 @@ def show_results():
                         field_width=str(fs/60.), zp=round(zp_est,2), mad=round(zp_mad,2), band=band )
         
     # build the catalog and display it                     
-    if mode == 1:
+    if method == 1:
         search_field = coll.find_one( {"entry":"search_field"} )
         ra = search_field['ra']
         dec = search_field['dec']
         fs = search_field['fs']
+        if coll.find_one( {"entry":"allow_usnob"} )["allow_usnob"]:
+            ignore = None
+        else:
+            ignore = 'usnob'
+        
         try:
-            cat = gs.catalog( (ra,dec), fs ) #square box of size fs
+            cat = gs.catalog( (ra,dec), fs, ignore=ignore ) #square box of size fs
         except ValueError:
             session['feedback'] = "Error: No good sources found in requested field."
             return redirect(url_for('show_upload'))
@@ -459,7 +474,7 @@ def show_results():
         return render_template( "results12.html", coords=json.dumps(send_coords),\
                                     field_center=json.dumps([ra,dec]), field_width=str(fs/60.))
         
-    elif mode == 2:
+    elif method == 2:
         requested_coords = []
         curs = coll['requested_sources'].find()
         for i in range(curs.count()):
@@ -468,8 +483,13 @@ def show_results():
         
         center, size = gs.find_field( requested_coords )
         coll.insert( {"entry":"search_field", "ra":center[0], "dec":center[1], "fs":max(size)} )
+        if coll.find_one( {"entry":"allow_usnob"} )["allow_usnob"]:
+            ignore = None
+        else:
+            ignore = 'usnob'
+        
         try:
-            cat = gs.catalog( center, max(size), requested_coords )
+            cat = gs.catalog( center, max(size), requested_coords, ignore=ignore )
         except ValueError:
             session['feedback'] = "Error: No good sources found in requested field."
             return redirect(url_for('show_upload'))
@@ -502,7 +522,7 @@ def show_results():
         return render_template( "results12.html", coords=json.dumps(send_coords),\
                                             field_center=json.dumps([center[0], center[1]]), field_width=str(max(size)/60.))
         
-    elif mode == 3:
+    elif method == 3:
         band = coll.find_one( {"entry":"passband"} )["passband"]
         requested_coords, inst_mags = [],[]
         curs = coll['requested_sources'].find()
@@ -513,8 +533,13 @@ def show_results():
         
         center, size = gs.find_field( requested_coords )
         coll.insert( {"entry":"search_field", "ra":center[0], "dec":center[1], "fs":max(size)} )
+        if coll.find_one( {"entry":"allow_usnob"} )["allow_usnob"]:
+            ignore = None
+        else:
+            ignore = 'usnob'
+        
         try:
-            cat = gs.catalog( center, max(size), requested_coords )
+            cat = gs.catalog( center, max(size), requested_coords, ignore=ignore )
         except ValueError:
             session['feedback'] = "Error: No good sources found in requested field."
             return redirect(url_for('show_upload'))
@@ -634,7 +659,7 @@ def serve_spectrum():
     spec = int(request.args.get('spec',''))
     sed_index = int(request.args.get('index',''))
     # truncate the data below 2500AA    
-    wl = SPEC_DICT['lam'][ SPEC_DICT['lam']>2500 ] #Angstroms
+    wl = SPEC_DICT['lam'] #Angstroms
     
     # now match the model spectrum to the SED, using the Y-band
     #  to match (since Y will always be modeled)
@@ -647,7 +672,7 @@ def serve_spectrum():
     #D is the multiplier needed to make the model mesh with the fitted model
     D = sed_flam[5]/y_model_flam
     
-    spec = D*SPEC_DICT[spec][ SPEC_DICT['lam']>2500 ]
+    spec = D*SPEC_DICT[spec]
     
     # push data into a json-able format: a list of dictionaries
     json_list = [{'x': wl[i], 'y': spec[i]} for i in range(len(wl))]
@@ -667,10 +692,14 @@ def serve_sed_flams():
     sed_mags = curs["sed"]
     sed_errs = curs["errors"]
     mode = curs["mode"]
-    if mode == 1:
+    if mode == 2:
         #USNOB+2MASS
         modeled = ['m']*6 + ['o','m']*2 + ['o']*3
         ordered_list = [0,1,2,3,4,5,7,9, 6,8,10,11,12]
+    elif mode == 1:
+        #APASS+2MASS
+        modeled = ['m'] + ['o']*3 + ['m']*2 + ['o']*2 + ['m']*2 + ['o']*3
+        ordered_list = [0,4,5,8,9, 1,2,3,6,7,10,11,12]
     else:
         #SDSS+2MASS
         modeled = ['o']*5 + ['m']*5 + ['o']*3
@@ -705,10 +734,13 @@ def serve_sed_mags():
     sed_mags = curs["sed"]
     sed_errs = curs["errors"]
     mode = curs["mode"]
-    
-    if mode == 1:
+
+    if mode == 2:
         #USNOB+2MASS
-        modeled = ['m']*6 + ['o','m']*2 + ['o']*3
+        modeled = ['m']*6 + ['o','m']*2 + ['o']*3    
+    if mode == 1:
+        #APASS+2MASS
+        modeled = ['m'] + ['o']*3 + ['m']*2 + ['o']*2 + ['m']*2 + ['o']*3
     else:
         #SDSS+2MASS
         modeled = ['o']*5 + ['m']*5 + ['o']*3
@@ -730,7 +762,8 @@ def serve_full_catalog():
     "# %s \n"%web_host +\
     "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
     '#  Mode = 0: -> B,V,R,I,y modeled from SDSS and 2-MASS\n' +\
-    '#  Mode = 1: -> u,g,r,i,z,y,V,I modeled from USNOB-1 and 2-MASS\n' +\
+    '#       = 1: -> u,z,y,R,I modeled from APASS and 2-MASS\n' +\
+    '#       = 2: -> u,g,r,i,z,y,V,I modeled from USNOB-1 and 2-MASS\n' +\
     "# " + "RA".ljust(10) + "DEC".ljust(12) + "".join([f.ljust(8) for f in ALL_FILTERS]) +\
     "".join([(f+"_err").ljust(8) for f in ALL_FILTERS]) + "Mode\n"
     
@@ -797,6 +830,9 @@ def api_handler():
     If a 'GET' request, the url keys are: 'ra','dec','size', optional:'response'
     If a 'POST', a properly-formatted file must be uploaded, and a passband url key
      ('band') as well as a mode key ('mode') must be passed along.
+    
+    i.e.:
+    http://classy.astro.berkeley.edu/api?mode=1&ra=200.&dec=20.&size=450.&response=ascii&ignore_usnob
     '''
     response_type = 'ascii' #what type of response to give. {'ascii', 'json'}
     try:
@@ -805,6 +841,10 @@ def api_handler():
             response_type = 'json'
     except:
         pass
+    ignore = None
+    if 'ignore_usnob' in request.args.keys():
+        ignore = 'usnob'
+        
     if request.method == 'GET':
         '''
         Produce & return a catalog in a field.  This is mode 1.
@@ -825,7 +865,7 @@ def api_handler():
         coll.insert( {"entry":"mode", "mode":1} )
         coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":size} )
         try:
-            cat = gs.catalog( (ra,dec), size )
+            cat = gs.catalog( (ra,dec), size, ignore=ignore )
         except ValueError:
             return Response( '{ success:false, message:"No suitable sources found in requested field."}',
                             mimetype='application/json')
@@ -857,7 +897,7 @@ def api_handler():
         Produce and return a cross-matched catalog, perhaps with zeropoint estimate.  Modes 2, 3.
         '''
         try:
-            mode = int( request.args.get('mode') )
+            method = int( request.args.get('method') )
             source_file = request.files["source_file"]
         except:
             return Response( '{ success:false, message:"Request not formatted properly."}',
@@ -880,7 +920,7 @@ def api_handler():
             return Response( '{ success:false, message:"Uploaded file needs to end in .txt."}',
                             mimetype='application/json')
         
-        if mode == 2:
+        if method == 2:
             # produce matched catalog only
             # if all's good, create the collection and populate it
             coll = create_collection()
@@ -891,7 +931,7 @@ def api_handler():
             
             center, size = gs.find_field( requested_coords )
             try:
-                cat = gs.catalog( center, max(size), requested_coords )
+                cat = gs.catalog( center, max(size), requested_coords, ignore=ignore )
             except ValueError:
                 return Response( '{ success:false, message:"No suitable sources found in requested field."}',
                                 mimetype='application/json')
@@ -925,7 +965,7 @@ def api_handler():
                 response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
                 return response
         
-        elif mode == 3:
+        elif method == 3:
             # produce matched catalog and zeropoint estimate
             try:
                 band = request.args.get('band')
@@ -944,7 +984,7 @@ def api_handler():
             
             center, size = gs.find_field( requested_coords )
             try:
-                cat = gs.catalog( center, max(size), requested_coords )
+                cat = gs.catalog( center, max(size), requested_coords, ignore=ignore )
             except ValueError:
                 return Response( '{ success:false, message:"No suitable sources found in requested field."}',
                                 mimetype='application/json')
@@ -1001,7 +1041,8 @@ def build_ascii( json_list, header_str=None ):
     "# http://classy.astro.berkeley.edu/ \n" +\
     "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
     '#  Mode = 0: -> B,V,R,I,y modeled from SDSS and 2-MASS\n' +\
-    '#  Mode = 1: -> u,g,r,i,z,y,V,I modeled from USNOB-1 and 2-MASS\n'
+    '#       = 1: -> u,z,y,R,I modeled from APASS and 2-MASS\n' +\
+    '#       = 2: -> u,g,r,i,z,y,V,I modeled from USNOB-1 and 2-MASS\n'
     if header_str != None:
         if type(header_str) == str:
             ascii_out += '# '+header_str+'\n'

@@ -9,13 +9,13 @@
       <div class="hero-unit">
 		<h3>PhotoZPE: an All-Sky Photometric Zeropoint Estimation Engine.</h3>
 		<p> This site uses all-sky catalogs and synthetic photometry 
-			to produce the photometric magnitude of stars anywhere on the sky in a set
+			to produce photometry of stars anywhere on the sky in a set
 			of the most commonly-used passbands. We use cataloged observations if they exist,
 			and provide modeled estimates if they don't. <br>
 			The goal: to provide a robust and simple way to estimate the photometric 
 			zeropoint of an astronomical image for any band in any part of the sky.<br>
 			Please read the <a href="{{ url_for('show_info') }}">info page</a> for
-			a complete description, a discussion of errors,	and a few examples. <br><br>
+			a complete description, a discussion of errors, and a few examples. <br><br>
 		
 			Contact me with any questions!<br>
 			-<a target="_blank" href="http://astro.berkeley.edu/~ishivvers/">Isaac Shivvers</a> <br>
@@ -42,6 +42,9 @@
 				  <input type="text" name="RA" class="input-small" placeholder="RA (&deg;)">
 				  <input type="text" name="DEC" class="input-small" placeholder="DEC (&deg;)">
 				  <input type="text" name="FS" class="input-small" placeholder="Field Size (&quot;)">
+				  <label class="checkbox">
+			        <input type="checkbox" checked="checked" name="allow_usnob"> Include USNOB-1
+			      </label>
 				  <input type="hidden" name="mode" value="1">
 				  <br><input type="submit" class="btn btn-primary" value="Submit"/>
 				</form>
@@ -101,6 +104,9 @@
 			  <span class="fileupload-preview"></span>
 			  <a href="#" class="close fileupload-exists" data-dismiss="fileupload" style="float: none">×</a>
 			</div>
+			<label class="checkbox">
+		        <input type="checkbox" checked="checked" name="allow_usnob"> Include USNOB-1
+		    </label>
 			<input type="hidden" name="mode" value="2">
 			<input type="submit" class="btn btn-primary" value="Submit"/>
 			</form>
@@ -116,7 +122,6 @@
 			    <span class="fileupload-preview"></span>
 			    <a href="#" class="close fileupload-exists" data-dismiss="fileupload" style="float: none">×</a>
 			  </div>
-			<input type="hidden" name="mode" value="3">
 			<select class="input-mini" name="band">
 			  <option value="u">u</option>
 			  <option value="g">g</option>
@@ -132,6 +137,10 @@
 			  <option value="H">H</option>
 			  <option value="K">K</option>
 			</select>
+			<label class="checkbox">
+		        <input type="checkbox" checked="checked" name="allow_usnob"> Include USNOB-1
+		    </label>
+			<input type="hidden" name="mode" value="3">
 			<br><input type="submit" class="btn btn-primary" value="Submit"/>
 			</form>
 		</div><!--/span-->

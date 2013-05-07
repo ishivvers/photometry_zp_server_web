@@ -167,9 +167,7 @@ def show_upload():
             if source_file and allowed_file(source_file.filename):
                 # try to parse with numpy
                 try:
-                    fn = app.root_path + '/tmp/' + str(np.random.randint(9999)) + '.txt'
-                    source_file.save( fn )
-                    data = np.loadtxt( fn ) #[:1000] #only accept first 1000 sources
+                    data = np.loadtxt( source_file ) #[:1000] #only accept first 1000 sources
                     # check to see whether we exceed the 1-degree limit
                     center, size = gs.find_field( data[:,:2] )
                     if max(size) > MAX_FIELD:
@@ -735,7 +733,7 @@ def serve_sed_mags():
     sed_mags = curs["sed"]
     sed_errs = curs["errors"]
     mode = curs["mode"]
-
+    
     if mode == 2:
         #USNOB+2MASS
         modeled = ['m']*6 + ['o','m']*2 + ['o']*3    
@@ -863,7 +861,7 @@ def api_handler():
     
         # create a database entry, so we can view these results through the GUI too
         coll = create_collection()
-        coll.insert( {"entry":"mode", "mode":1} )
+        coll.insert( {"entry":"method", "method":1} )
         coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":size} )
         try:
             cat = gs.catalog( (ra,dec), size, ignore=ignore )
@@ -895,7 +893,7 @@ def api_handler():
             return response
     else:
         '''
-        Produce and return a cross-matched catalog, perhaps with zeropoint estimate.  Modes 2, 3.
+        Produce and return a cross-matched catalog, perhaps with zeropoint estimate.  Methods 2, 3.
         '''
         try:
             method = int( request.args.get('method') )
@@ -906,9 +904,7 @@ def api_handler():
         if source_file and allowed_file(source_file.filename):
             # try to parse with numpy
             try:
-                fn = app.root_path + '/tmp/' + str(np.random.randint(9999)) + '.txt' 
-                source_file.save( fn )
-                data = np.loadtxt( fn ) #[:1000] #only accept first 1000 sources
+                data = np.loadtxt( source_file ) #[:1000] #only accept first 1000 sources
                 # check to see whether we exceed the 1-degree limit
                 center, size = gs.find_field( data[:,:2] )
                 if max(size) > MAX_FIELD:
@@ -931,6 +927,7 @@ def api_handler():
             requested_coords = data[:,:2].tolist()
             
             center, size = gs.find_field( requested_coords )
+            coll.insert( {"entry":"search_field", "ra":center[0], "dec":center[1], "fs":max(size)} )
             try:
                 cat = gs.catalog( center, max(size), requested_coords, ignore=ignore )
             except ValueError:
@@ -984,6 +981,7 @@ def api_handler():
             inst_mags = data[:,2].tolist()
             
             center, size = gs.find_field( requested_coords )
+            coll.insert( {"entry":"search_field", "ra":center[0], "dec":center[1], "fs":max(size)} )
             try:
                 cat = gs.catalog( center, max(size), requested_coords, ignore=ignore )
             except ValueError:

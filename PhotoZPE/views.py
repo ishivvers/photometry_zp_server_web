@@ -105,6 +105,7 @@ def show_info():
 
 
 @app.route('/photozpe', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def home():
     # homepage simply points to upload
     return redirect(url_for('show_upload'))
@@ -157,7 +158,6 @@ def show_upload():
             coll.insert( {"entry":"method", "method":method} )
             coll.insert( {"entry":"allow_usnob", "allow_usnob":allow_usnob} )
             coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":fs} )
-            print 'hi'
             # and take them straight to the results
             return redirect(url_for('show_results'))
         
@@ -171,7 +171,7 @@ def show_upload():
                     source_file.save( fn )
                     data = np.loadtxt( fn ) #[:1000] #only accept first 1000 sources
                     # check to see whether we exceed the 1-degree limit
-                    center, size = gs.find_field( data[:,:2].tolist() )
+                    center, size = gs.find_field( data[:,:2] )
                     if max(size) > MAX_FIELD:
                         return render_template( "upload.html", feedback="Requested field exceeds size limit!")
                 except:
@@ -910,7 +910,7 @@ def api_handler():
                 source_file.save( fn )
                 data = np.loadtxt( fn ) #[:1000] #only accept first 1000 sources
                 # check to see whether we exceed the 1-degree limit
-                center, size = gs.find_field( data[:,:2].tolist() )
+                center, size = gs.find_field( data[:,:2] )
                 if max(size) > MAX_FIELD:
                     return Response( '{ success:false, message:"Requested field size exceeds limit."}',
                                     mimetype='application/json')

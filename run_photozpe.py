@@ -36,4 +36,4 @@ if __name__ == '__main__':
     '''
     
     # start the simple flask server and let her see the larger world
-    app.run(host='0.0.0.0', port=port, debug=True) #set debug=True for debugging interface
+    app.run(host='0.0.0.0', port=port ) #set debug=True for debugging interface

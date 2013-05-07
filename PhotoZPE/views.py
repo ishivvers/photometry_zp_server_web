@@ -833,7 +833,7 @@ def api_handler():
      ('band') as well as a method key ('method') must be passed along.
     
     i.e.:
-    http://classy.astro.berkeley.edu/api?mode=1&ra=200.&dec=20.&size=450.&response=ascii&ignore_usnob
+    http://classy.astro.berkeley.edu/api?method=1&ra=200.&dec=20.&size=450.&response=ascii&ignore_usnob
     '''
     response_type = 'ascii' #what type of response to give. {'ascii', 'json'}
     try:
@@ -925,7 +925,7 @@ def api_handler():
             # produce matched catalog only
             # if all's good, create the collection and populate it
             coll = create_collection()
-            coll.insert( {"entry":"mode", "mode":mode} )
+            coll.insert( {"entry":"method", "method":method} )
             for row in data:
                 coll["requested_sources"].insert( {"ra":row[0], "dec":row[1] })
             requested_coords = data[:,:2].tolist()
@@ -975,7 +975,7 @@ def api_handler():
                                 mimetype='application/json')
             # if all's good, create the collection and populate it
             coll = create_collection()
-            coll.insert( {"entry":"mode", "mode":mode} )
+            coll.insert( {"entry":"method", "method":method} )
             coll.insert( {"entry":"passband", "passband":band} )
             for row in data:
                 coll["requested_sources"].insert( {"ra":row[0], "dec":row[1], "inst_mag":row[2] })

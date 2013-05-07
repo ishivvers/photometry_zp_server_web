@@ -131,7 +131,7 @@ def show_upload():
         # serve up the upload interface
         return render_template( "upload.html", feedback=feedback )
     else:
-        # see which mode we're in
+        # see which method we're in
         method = int(request.form['method'])
         if 'allow_usnob' in request.form.keys():
             allow_usnob = True
@@ -157,6 +157,7 @@ def show_upload():
             coll.insert( {"entry":"method", "method":method} )
             coll.insert( {"entry":"allow_usnob", "allow_usnob":allow_usnob} )
             coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":fs} )
+            print 'hi'
             # and take them straight to the results
             return redirect(url_for('show_results'))
         
@@ -189,7 +190,7 @@ def show_upload():
                 for row in data:
                     coll["requested_sources"].insert( {"ra":row[0], "dec":row[1] })
                 # have the user check that the file uploaded correctly
-                return render_template( "upload.html", mode=mode, data=data[:5] )
+                return render_template( "upload.html", method=method, data=data[:5] )
             elif method == 3:
                 # produce matched catalog and zeropoint estimate
                 # if all's good, create the collection and populate it
@@ -201,7 +202,7 @@ def show_upload():
                 for row in data:
                     coll["requested_sources"].insert( {"ra":row[0], "dec":row[1], "inst_mag":row[2] })
                 # have the user check that the file uploaded correctly
-                return render_template( "upload.html", mode=mode, data=data[:5], band=band )
+                return render_template( "upload.html", method=method, data=data[:5], band=band )
 
 
 def create_collection():
@@ -829,7 +830,7 @@ def api_handler():
      process it and provide cross-matched models and zeropoint estimate as well.
     If a 'GET' request, the url keys are: 'ra','dec','size', optional:'response'
     If a 'POST', a properly-formatted file must be uploaded, and a passband url key
-     ('band') as well as a mode key ('mode') must be passed along.
+     ('band') as well as a method key ('method') must be passed along.
     
     i.e.:
     http://classy.astro.berkeley.edu/api?mode=1&ra=200.&dec=20.&size=450.&response=ascii&ignore_usnob
@@ -847,7 +848,7 @@ def api_handler():
         
     if request.method == 'GET':
         '''
-        Produce & return a catalog in a field.  This is mode 1.
+        Produce & return a catalog in a field.  This is method 1.
         '''
         try:
             ra = parse_ra( request.args.get('ra') )

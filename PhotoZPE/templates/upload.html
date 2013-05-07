@@ -30,7 +30,7 @@
 			</div><!--/row-->
 			{% endif %}
 			
-			{% if not mode %}
+			{% if not method %}
 			{# only show this request box if we haven't already put in a request below #}
 			<div class="row-fluid">
 			  <div class="span6 offset3">
@@ -45,14 +45,12 @@
 				  <label class="checkbox">
 			        <input type="checkbox" checked="checked" name="allow_usnob"> Include USNOB-1
 			      </label>
-				  <input type="hidden" name="mode" value="1">
+				  <input type="hidden" name="method" value="1">
 				  <br><input type="submit" class="btn btn-primary" value="Submit"/>
 				</form>
 			  </div><!--/span-->
 			</div><!--/row-->
-			{% endif %}
-
-			{% if mode %}
+			{% elif method %}
 			{# ask for confirmation if a file was uploaded #}
 			<div class="row-fluid">
 		      <div class="span6 offset3">
@@ -61,14 +59,14 @@
 				  <table class="table table-condensed">
 				    <tr><td><b>RA</b></td>
 					<td><b>DEC</b></td>
-					{% if mode==3 %}
+					{% if method==3 %}
 					  <td><b>{{band}} Mag</b></td>
 					{% endif %}
 					</tr>
 					{% for row in data %}
 					  <tr><td>{{ row[0] }}</td>
 					  <td>{{ row[1] }}</td>
-					  {% if mode==3 %}
+					  {% if method==3 %}
 					    <td>{{ row[2] }}</td>
 					  {% endif %}
 					  </tr>
@@ -107,7 +105,7 @@
 			<label class="checkbox">
 		        <input type="checkbox" checked="checked" name="allow_usnob"> Include USNOB-1
 		    </label>
-			<input type="hidden" name="mode" value="2">
+			<input type="hidden" name="method" value="2">
 			<input type="submit" class="btn btn-primary" value="Submit"/>
 			</form>
 		</div><!--/span-->
@@ -140,7 +138,7 @@
 			<label class="checkbox">
 		        <input type="checkbox" checked="checked" name="allow_usnob"> Include USNOB-1
 		    </label>
-			<input type="hidden" name="mode" value="3">
+			<input type="hidden" name="method" value="3">
 			<br><input type="submit" class="btn btn-primary" value="Submit"/>
 			</form>
 		</div><!--/span-->

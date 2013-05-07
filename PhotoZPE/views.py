@@ -105,6 +105,7 @@ def show_info():
 
 
 @app.route('/photozpe', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def home():
     # homepage simply points to upload
     return redirect(url_for('show_upload'))

@@ -46,7 +46,7 @@
 			        <input type="checkbox" checked="checked" name="allow_usnob"> Include USNOB-1
 			      </label>
 				  <input type="hidden" name="method" value="1">
-				  <br><input type="submit" class="btn btn-primary" value="Submit"/>
+				  <br><input type="submit" class="btn btn-primary" value="Submit" onclick="mark_disabled();"/>
 				</form>
 			  </div><!--/span-->
 			</div><!--/row-->
@@ -72,7 +72,7 @@
 					  </tr>
 					{% endfor %}
 			      </table>
-				  <a href="{{ url_for('show_results') }}" class="btn btn-primary">Continue</a>
+				  <a href="{{ url_for('show_results') }}" class="btn btn-primary" onclick="mark_disabled();">Continue</a>
 				</div><!--/span-->
 			  </div><!--/row-->
 			  {% endif %}
@@ -106,7 +106,7 @@
 		        <input type="checkbox" checked="checked" name="allow_usnob"> Include USNOB-1
 		    </label>
 			<input type="hidden" name="method" value="2">
-			<input type="submit" class="btn btn-primary" value="Submit"/>
+			<input type="submit" class="btn btn-primary" value="Submit" onclick="mark_disabled();"/>
 			</form>
 		</div><!--/span-->
 		<div class="span4">
@@ -139,7 +139,7 @@
 		        <input type="checkbox" checked="checked" name="allow_usnob"> Include USNOB-1
 		    </label>
 			<input type="hidden" name="method" value="3">
-			<br><input type="submit" class="btn btn-primary" value="Submit"/>
+			<br><input type="submit" class="btn btn-primary" value="Submit"  onclick="mark_disabled();"/>
 			</form>
 		</div><!--/span-->
 	</div> <!--/row-->
@@ -155,5 +155,15 @@
 		</div><!--/span-->
 	</div><!--/row-->
 </div><!--/container-->
+
+<script type="text/javascript">
+// quick function to make submit buttons look disabled after first submit
+function mark_disabled() {
+	var buttons = document.getElementsByClassName('btn');
+	for (var i=0;i<buttons.length;i++) {
+		buttons[i].className = buttons[i].className + " disabled";
+	}
+}
+</script>
 
 {% endblock %}

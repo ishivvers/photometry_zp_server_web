@@ -115,21 +115,19 @@ function draw_spectrum( spec_id, sed_index, ra, dec ) {
 	svg.selectAll(".errorbars").remove();
 	svg.selectAll(".labels").remove();
 	
-	// put in the line plot with a json call to serve_spectrum:
-	d3.json( "{{ url_for('serve_spectrum') }}?spec="+String(spec_id)+"&index="+String(sed_index), function(data) {
-		// parse the domains, and put into the scales
-		xScale.domain([ d3.min(data, function(d){return d.x;}), d3.max(data, function(d){return d.x;}) ]);
-		yScale.domain([ d3.min(data, function(d){ return d.y;}), d3.max(data, function(d){return d.y;}) ]);
-
-		// bind the data to our line plot, using the line generator above
-		svg.select("path.line").data( [data] );
-
-        // within this callback, make a call to build the scatterplot
-        draw_scatterplot( sed_index );
-        // draw the image
-        draw();
-        // and update the text
-        update_text(sed_index, spec_id, ra, dec);
+	// put in the line plot by pulling it out of the client-side array
+	// parse the domains, and put into the scales
+	xScale.domain([ d3.min(SPEC_ARRAY[0]), d3.max(SPEC_ARRAY[1]) ]);
+	yScale.domain([ d3.min(SPEC_ARRAY[1][sed_index]), d3.max(SPEC_ARRAY[1][sed_index]) ]);
+	// bind the data to our line plot, using the line generator above
+	svg.select("path.line").data( SPEC_ARRAY[1][sed_index] );
+	
+    // within this callback, make a call to build the scatterplot
+    draw_scatterplot( sed_index );
+    // draw the image
+    draw();
+    // and update the text
+    update_text(sed_index, spec_id, ra, dec);
 	});
 };
 
@@ -366,6 +364,10 @@ svg2.selectAll(".dot")
 		draw_spectrum(d[4], d[5], d[0], d[1]);
 		d3.select(this).attr("stroke", "firebrick");
 		});
+
+// loading the data arrays
+var SPEC_ARRAY = d3.json( "{{ url_for('serve_spectra') }}" );
+
 
 {% block more_javascript %}{% endblock %}
 </script>

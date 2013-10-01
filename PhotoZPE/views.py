@@ -461,7 +461,7 @@ def show_results():
             
         # put into database
         for i in range(len(cat.SEDs)):
-            coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i],\
+            coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i], "observed":cat.observed[i],\
                                     "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
                                     
         # send to webpage
@@ -506,7 +506,7 @@ def show_results():
         i = 0
         for j,match in enumerate(matches):
             if match >= 0:
-                coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match],\
+                coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i],\
                                         "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
                 out_model_indices.append( cat.models[match] )
                 out_coords.append( requested_coords[j] )
@@ -563,7 +563,7 @@ def show_results():
         i = 0
         for j,match in enumerate(matches):
             if match >= 0:
-                coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match],\
+                coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i],\
                                         "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
                 out_model_indices.append( cat.models[match] )
                 out_coords.append( requested_coords[j] )
@@ -760,17 +760,9 @@ def serve_sed_mags():
     curs = coll['data'].find_one( {"index":sed_index} )
     sed_mags = curs["sed"]
     sed_errs = curs["errors"]
-    mode = curs["mode"]
     
-    if mode == 2:
-        #USNOB+2MASS
-        modeled = ['m']*6 + ['o','m']*2 + ['o']*3    
-    if mode == 1:
-        #APASS+2MASS
-        modeled = ['m'] + ['o']*3 + ['m']*2 + ['o']*2 + ['m']*2 + ['o']*3
-    else:
-        #SDSS+2MASS
-        modeled = ['o']*5 + ['m']*5 + ['o']*3
+    modeled = ['o' if obs else 'm' for obs in curs["observed"]]
+    
     # push everything into json-able format
     json_list = [{'x': FILTER_PARAMS[ALL_FILTERS[i]][0], 'y': sed_mags[i], 'err': sed_errs[i], \
                  'modeled': modeled[i], 'name': ALL_FILTERS[i]} for i in range(len(sed_mags))]
@@ -784,23 +776,28 @@ def serve_full_catalog():
     Returns formatted & human-readable ASCII catalog of all sources.
     '''
     #mags, errs, mods, coords = DATA
-    catalog_txt = \
-    "# Catalog produced by the Photometric Estimate Server\n"+\
-    "# %s \n"%web_host +\
-    "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
-    '#  Mode = 0: -> B,V,R,I,y modeled from SDSS and 2-MASS\n' +\
-    '#       = 1: -> u,z,y,R,I modeled from APASS and 2-MASS\n' +\
-    '#       = 2: -> u,g,r,i,z,y,V,I modeled from USNOB-1 and 2-MASS\n' +\
-    "# " + "RA".ljust(10) + "DEC".ljust(12) + "".join([f.ljust(8) for f in ALL_FILTERS]) +\
-    "".join([(f+"_err").ljust(8) for f in ALL_FILTERS]) + "Mode\n"
+    catalog_txt = "# Catalog produced by the Photometric Estimate Server\n"+\
+                  "# %s \n"%web_host +\
+                  '# Generated: {}\n'.format(strftime("%H:%M %B %d, %Y")) +\
+                  '#  Mode = 0: -> Model fit to SDSS and 2-MASS\n' +\
+                  '#       = 1: -> Model fit to APASS and 2-MASS\n' +\
+                  '#       = 2: -> Model fit to USNOB-1 and 2-MASS\n' +\
+                  "# " + "RA".ljust(10) + "DEC".ljust(12)
+    for f in gs.ALL_FILTERS:
+        headstr += f.ljust(8)
+        headstr += (f+"_err").ljust(8)
+        headstr += (f+"_obs").ljust(6)
+    headstr += "Mode\n"
     
     coll = DB[ session['sid'] ]
     curs = coll['data'].find()
     for i in range(curs.count()):
         obj = curs.next()
-        catalog_txt += "".join([ s.ljust(12) for s in map(lambda x: "%.6f"%x, obj["coords"]) ])
-        catalog_txt += "".join([ s.ljust(8) for s in map(lambda x: "%.3f"%x, obj["sed"]) ])
-        catalog_txt += "".join([ s.ljust(8) for s in map(lambda x: "%.4f"%x, obj["errors"]) ])
+        catalog_txt += ("%.6f" % obj["coords"][0]).ljust(12) + ("%.6f" % obj["coords"][1]).ljust(12)
+        for j,band in enumerate(gs.ALL_FILTERS):
+            catalog_txt += ("%.3f" % obj["sed"][j]).ljust(8) +\
+                           ("%.3f" % obj["errors"][j]).ljust(8) +\
+                           ("%d" % int(obj["observed"][j])).ljust(6)
         catalog_txt += str(obj["mode"])+"\n"
         
     response = Response(catalog_txt, mimetype='text/plain')
@@ -906,9 +903,9 @@ def api_handler():
         json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
                        'query_ID':session['sid'], 'website':web_host, 'bands':ALL_FILTERS}, []]
         for i in range(len(cat.SEDs)):
-            coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i],\
+            coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i], "observed":cat.observed[i],\
                                   "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
-            json_list[1].append({ 'ra':cat.coords[i][0], 'dec':cat.coords[i][1], 'mode':cat.modes[i],\
+            json_list[1].append({ 'ra':cat.coords[i][0], 'dec':cat.coords[i][1], 'mode':cat.modes[i], "observed":cat.observed[i],\
                                   'phot':np.round(cat.SEDs[i],3).tolist(), 'errors':np.round(cat.full_errors[i],4).tolist() })
         
         # return the catalog in either ascii or JSON
@@ -976,9 +973,9 @@ def api_handler():
             i = 0
             for j,match in enumerate(matches):
                 if match >= 0:
-                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match],\
+                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i],\
                                           "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
-                    json_list[1].append( {'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
+                    json_list[1].append( {'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match], "observed":cat.observed[i],\
                                           'phot':np.round(cat.SEDs[match],3).tolist(), 'errors':np.round(cat.full_errors[match],4).tolist() })
                     i +=1
             
@@ -1038,9 +1035,9 @@ def api_handler():
             i = 0
             for j,match in enumerate(matches):
                 if match >= 0:
-                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match],\
+                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i],\
                                             "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
-                    json_list[1].append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match],\
+                    json_list[1].append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match], "observed":cat.observed[i],\
                                        'phot':np.round(cat.SEDs[match],3).tolist(), 'errors':np.round(cat.full_errors[match],4).tolist() })
                     i +=1
             
@@ -1063,28 +1060,31 @@ def build_ascii( json_list, header_str=None ):
     header_str: either single-line string or list of strings to insert into the
       (commented-out) header of the ascii file.
     '''
-    ascii_out = \
-    "# Catalog produced by the Photometric Estimate Server\n"+\
-    "# http://classy.astro.berkeley.edu/ \n" +\
-    "# Generated: {}\n".format(strftime("%H:%M %B %d, %Y")) +\
-    '#  Mode = 0: -> B,V,R,I,y modeled from SDSS and 2-MASS\n' +\
-    '#       = 1: -> u,z,y,R,I modeled from APASS and 2-MASS\n' +\
-    '#       = 2: -> u,g,r,i,z,y,V,I modeled from USNOB-1 and 2-MASS\n'
+    ascii_out = "# Catalog produced by the Photometric Estimate Server\n"+\
+                "# %s \n"%web_host +\
+                '# Generated: {}\n'.format(strftime("%H:%M %B %d, %Y")) +\
+                '#  Mode = 0: -> Model fit to SDSS and 2-MASS\n' +\
+                '#       = 1: -> Model fit to APASS and 2-MASS\n' +\
+                '#       = 2: -> Model fit to USNOB-1 and 2-MASS\n'
     if header_str != None:
         if type(header_str) == str:
             ascii_out += '# '+header_str+'\n'
         elif type(header_str) == list:
             for hs in header_str:
                 ascii_out += '# '+hs+'\n'
-    ascii_out += "# " + "RA".ljust(10) + "DEC".ljust(12) + "".join([f.ljust(8) for f in ALL_FILTERS]) +\
-                 "".join([(f+"_err").ljust(8) for f in ALL_FILTERS]) + "Mode\n"
+    ascii_out += "# " + "RA".ljust(10) + "DEC".ljust(12)
+    for f in gs.ALL_FILTERS:
+        ascii_out += f.ljust(8)
+        ascii_out += (f+"_err").ljust(8)
+        ascii_out += (f+"_obs").ljust(6)
+    ascii_out += "Mode\n"
+    
     for obj in json_list:
-        ascii_out += "".join([ s.ljust(12) for s in map(lambda x: "%.6f"%x, [obj["ra"], obj["dec"]]) ])
-        ascii_out += "".join([ s.ljust(8) for s in map(lambda x: "%.3f"%x, obj["phot"]) ])
-        ascii_out += "".join([ s.ljust(8) for s in map(lambda x: "%.4f"%x, obj["errors"]) ])
+        ascii_out += ("%.6f" % obj["ra"]).ljust(12) + ("%.6f" % obj["dec"]).ljust(12)
+        for j,band in enumerate(gs.ALL_FILTERS):
+            ascii_out += ("%.3f" % obj["phot"][j]).ljust(8) +\
+                         ("%.3f" % obj["errors"][j]).ljust(8) +\
+                         ("%d" % int(obj["observed"][j])).ljust(6)
         ascii_out += str(obj["mode"])+"\n"
     return ascii_out
-
-
-
 

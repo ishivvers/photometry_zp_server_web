@@ -458,6 +458,7 @@ def show_results():
         cat.SEDs = cat.SEDs.tolist()
         cat.full_errors = cat.full_errors.tolist()
         cat.coords = cat.coords.tolist()
+        cat.observed = cat.observed.tolist()
             
         # put into database
         for i in range(len(cat.SEDs)):
@@ -500,6 +501,7 @@ def show_results():
         cat.SEDs = cat.SEDs.tolist()
         cat.full_errors = cat.full_errors.tolist()
         cat.coords = cat.coords.tolist()
+        cat.observed = cat.observed.tolist()
         
         # put into database
         out_coords, out_model_indices = [],[]
@@ -557,6 +559,7 @@ def show_results():
         cat.SEDs = cat.SEDs.tolist()
         cat.full_errors = cat.full_errors.tolist()
         cat.coords = cat.coords.tolist()
+        cat.observed = cat.observed.tolist()
                         
         # put into db
         out_coords, out_model_indices = [],[]
@@ -869,6 +872,7 @@ def api_handler():
         cat.SEDs = cat.SEDs.tolist()
         cat.full_errors = cat.full_errors.tolist()
         cat.coords = cat.coords.tolist()
+        cat.observed = cat.observed.tolist()
         
         # put the catalog entries both into the database and into a response
         json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
@@ -937,6 +941,7 @@ def api_handler():
             cat.SEDs = cat.SEDs.tolist()
             cat.full_errors = cat.full_errors.tolist()
             cat.coords = cat.coords.tolist()
+            cat.observed = cat.observed.tolist()
             
             # put into database
             json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
@@ -998,6 +1003,7 @@ def api_handler():
             cat.SEDs = cat.SEDs.tolist()
             cat.full_errors = cat.full_errors.tolist()
             cat.coords = cat.coords.tolist()
+            cat.observed = cat.observed.tolist()
             
             # put into database and into json or ascii format
             json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\

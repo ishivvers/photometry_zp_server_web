@@ -458,11 +458,10 @@ def show_results():
         cat.SEDs = cat.SEDs.tolist()
         cat.full_errors = cat.full_errors.tolist()
         cat.coords = cat.coords.tolist()
-        cat.observed = cat.observed.tolist()
-            
+         
         # put into database
         for i in range(len(cat.SEDs)):
-            coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i], "observed":cat.observed[i],\
+            coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i], "observed":cat.observed[i].tolist(),\
                                     "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
                                     
         # send to webpage
@@ -501,14 +500,13 @@ def show_results():
         cat.SEDs = cat.SEDs.tolist()
         cat.full_errors = cat.full_errors.tolist()
         cat.coords = cat.coords.tolist()
-        cat.observed = cat.observed.tolist()
         
         # put into database
         out_coords, out_model_indices = [],[]
         i = 0
         for j,match in enumerate(matches):
             if match >= 0:
-                coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i],\
+                coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i].tolist(),\
                                         "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
                 out_model_indices.append( cat.models[match] )
                 out_coords.append( requested_coords[j] )
@@ -559,14 +557,13 @@ def show_results():
         cat.SEDs = cat.SEDs.tolist()
         cat.full_errors = cat.full_errors.tolist()
         cat.coords = cat.coords.tolist()
-        cat.observed = cat.observed.tolist()
-                        
+            
         # put into db
         out_coords, out_model_indices = [],[]
         i = 0
         for j,match in enumerate(matches):
             if match >= 0:
-                coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i],\
+                coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i].tolist(),\
                                         "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
                 out_model_indices.append( cat.models[match] )
                 out_coords.append( requested_coords[j] )
@@ -872,15 +869,14 @@ def api_handler():
         cat.SEDs = cat.SEDs.tolist()
         cat.full_errors = cat.full_errors.tolist()
         cat.coords = cat.coords.tolist()
-        cat.observed = cat.observed.tolist()
         
         # put the catalog entries both into the database and into a response
         json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
                        'query_ID':session['sid'], 'website':web_host, 'bands':ALL_FILTERS}, []]
         for i in range(len(cat.SEDs)):
-            coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i], "observed":cat.observed[i],\
+            coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i], "observed":cat.observed[i].tolist(),\
                                   "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
-            json_list[1].append({ 'ra':cat.coords[i][0], 'dec':cat.coords[i][1], 'mode':cat.modes[i], "observed":cat.observed[i],\
+            json_list[1].append({ 'ra':cat.coords[i][0], 'dec':cat.coords[i][1], 'mode':cat.modes[i], "observed":cat.observed[i].tolist(),\
                                   'phot':np.round(cat.SEDs[i],3).tolist(), 'errors':np.round(cat.full_errors[i],4).tolist() })
         
         # return the catalog in either ascii or JSON
@@ -941,7 +937,6 @@ def api_handler():
             cat.SEDs = cat.SEDs.tolist()
             cat.full_errors = cat.full_errors.tolist()
             cat.coords = cat.coords.tolist()
-            cat.observed = cat.observed.tolist()
             
             # put into database
             json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
@@ -949,9 +944,9 @@ def api_handler():
             i = 0
             for j,match in enumerate(matches):
                 if match >= 0:
-                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i],\
+                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i].tolist(),\
                                           "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
-                    json_list[1].append( {'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match], "observed":cat.observed[i],\
+                    json_list[1].append( {'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match], "observed":cat.observed[i].tolist(),\
                                           'phot':np.round(cat.SEDs[match],3).tolist(), 'errors':np.round(cat.full_errors[match],4).tolist() })
                     i +=1
             
@@ -1003,7 +998,6 @@ def api_handler():
             cat.SEDs = cat.SEDs.tolist()
             cat.full_errors = cat.full_errors.tolist()
             cat.coords = cat.coords.tolist()
-            cat.observed = cat.observed.tolist()
             
             # put into database and into json or ascii format
             json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
@@ -1012,9 +1006,9 @@ def api_handler():
             i = 0
             for j,match in enumerate(matches):
                 if match >= 0:
-                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i],\
+                    coll['data'].insert( {"index":i, "sed":cat.SEDs[match], "errors":cat.full_errors[match], "observed":cat.observed[i].tolist(),\
                                             "mode":cat.modes[match], "coords":requested_coords[j], "models":int(cat.models[match])} )
-                    json_list[1].append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match], "observed":cat.observed[i],\
+                    json_list[1].append({ 'ra':requested_coords[j][0], 'dec':requested_coords[j][1], 'mode':cat.modes[match], "observed":cat.observed[i].tolist(),\
                                        'phot':np.round(cat.SEDs[match],3).tolist(), 'errors':np.round(cat.full_errors[match],4).tolist() })
                     i +=1
             

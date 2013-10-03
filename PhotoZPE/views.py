@@ -676,35 +676,6 @@ def serve_spectrum():
     json_list = [{'x': wl[i], 'y': spec[i]} for i in range(len(wl))]
     return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
 
-@app.route('/servespectra', methods=['GET'])
-def serve_spectra():
-    '''
-    Grabs spectra from the numpy file and renormalizes each one
-    (given a spectrum id with url?spec=value&index=value), and then
-    returns it in JSON format, as a set of objects with an x (Angstroms) and y (Flam),
-    one y array for each object.
-    '''
-    wl = SPEC_DICT['lam'] #Angstroms
-    
-    # now, for each object, match the model spectrum to the SED, using the Y-band
-    #  to match (since Y will always be modeled)
-    coll = DB[ session['sid'] ]
-    curs = coll['data'].find()
-    spectra_array = [[]]]*curs.count()
-    for i in range(curs.count()):
-        obj = curs.next()
-        spec = obj['models']
-        full_spec = SPEC_DICT[ spec ]
-        sed_mags = obj["sed"]
-        sed_flam = mag2flam( sed_mags, ALL_FILTERS )
-        # pull out the already-calculated model mag for yband
-        y_model_flam = mag2flam( [MODELS_DICT[ spec ][5]], ['y'] ) #need to be array-like
-        #D is the multiplier needed to make the model mesh with the fitted model
-        D = sed_flam[5]/y_model_flam
-        spectra_array[ obj['index'] ] = D*SPEC_DICT[spec]    
-    
-    json_list = [ wl, spectra_array ]
-    return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
 
 @app.route('/serveflams', methods=['GET'])
 def serve_sed_flams():

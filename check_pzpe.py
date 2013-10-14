@@ -30,7 +30,7 @@ def send_msg(toAddress, fromAddress, subject, message):
 
 try:
     # first test that the page is up
-    page = urllib2.urlopen(testPage).read()
+    page = urllib2.urlopen(testPage, timeout=30).read()
     start = page.find('<title>')
     assert (start>0)
     end = page.find('</title>')

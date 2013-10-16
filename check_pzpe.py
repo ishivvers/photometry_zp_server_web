@@ -36,7 +36,12 @@ try:
     end = page.find('</title>')
     assert (end>0)
     assert (page[start:end].strip('<title>')=='PhotoZPE')
+except Exception as E:
+    send_msg(toAddress, fromAddress, '[PhotZPE] Page Down Error',
+        'I report that the PhotoZPE page (classy) appears to be down!\n\n'+str(E)+\
+        '\n\nIn solidarity,\nthe classiest robot')
 
+try:
     # also test that the whole chain works, by making a quick API call
     res = Popen("hostname",shell=True,stdout=PIPE,stderr=PIPE)
     hostname,err = res.communicate()
@@ -46,14 +51,13 @@ try:
         targetfile = '/o/ishivvers/scratch/tmp.txt'
     else:
         raise Exception('What machine are we on, here?')
-    res = Popen("wget -O "+targetfile+" 'http://classy.astro.berkeley.edu/api?method=1&ra=200.&dec=20.&size=150.&response=ascii'",
+    res = Popen("wget -O "+targetfile+" 'http://classy.astro.berkeley.edu/api?method=1&ra=100.&dec=10.&size=150.&response=ascii'",
                 shell=True,stdout=PIPE,stderr=PIPE)
     out,err = res.communicate() #wait for the download to finish
     lines = open(targetfile,'r').readlines()
     Popen("rm "+targetfile, shell=True)
     assert (lines[0]=='# Catalog produced by the Photometric Estimate Server\n')
-
 except Exception as E:
     send_msg(toAddress, fromAddress, '[PhotZPE] Page Down Error',
-        'I report that the PhotoZPE page appears to be down!\n\n'+str(E)+\
+        'I report that the PhotoZPE backend (beast) appears to be down!\n\n'+str(E)+\
         '\n\nIn solidarity,\nthe classiest robot')

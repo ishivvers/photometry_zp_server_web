@@ -11,24 +11,23 @@
 	  <section id="PhotometricEstimates">
 	  <h2>Photometric Estimates and Zeropoint Offsets</h2>
 	   <p>This site was designed to produce accurate estimates of the 
-		  photometric zeropoint offset between a set of observations (instrumental magnitudes) taken anywhere on the sky
+		  photometric zeropoint offset between a set of observations (with units of instrumental magnitudes) 
 		  and a few standard photometric systems (i.e. <a target="_blank" href="http://www.sdss.org/">SDSS</a>, 
 		  <a target="_blank" href="http://www.aavso.org/apass">APASS</a>, 
 	 	  <a target="_blank" href="http://tdc-www.harvard.edu/catalogs/ub1.html">USNOB1</a>, 
  	      <a target="_blank" href="http://www.ipac.caltech.edu/2mass/overview/about2mass.html">2-MASS</a>).
 		  The zeropoint determines the connection between an astronomical image and
-		  a standard photometric system. For any single passband, m = -2.5 x log<sub>10</sub>(count rate) + zeropoint.
+		  a standard photometric system: for any single passband, m = -2.5 x log<sub>10</sub>(count rate) + zeropoint.
 		  For any image that includes sources with previously well-measured magnitudes in the passband, you can calculate
-		  the zeropoint for the entire image by comparing the count rate of those sources to their previously-measured magnitudes
-		  and then apply that zeropoint to all the sources in the image.
-		  The problem is that there are very often no available measures of a given field in the passband of interest.
-		  There are, however, a few catalogs that cover most of the sky in a few passbands, and we can do a pretty
-		  good job estimating any given source's brightness in any other passband based on it's catalogued brightnesses.
+		  the approximate zeropoint for the entire image by comparing those sources to their previously-measured magnitudes.
+		  Unfortunately you don't always have previously-calibrated observations of every field in the passband of interest.
+		  There are, however, a few catalogs that cover most of the sky in a select few passbands, and we can do a pretty
+		  good job estimating any given source's brightness in any other passband based on those catalogs.
 		</p>
 		<p>
-		  In detail, we do this by we cross-matching sources from the 2-MASS catalog to sources in the SDSS catalog 
+		  In detail, we do this by cross-matching sources from the 2-MASS catalog to sources in the SDSS catalog 
 		  (if within <a target="_blank" href="http://www.sdss.org/dr7/coverage/">the SDSS footprint</a>), the 
-		  APASS all-sky catalog, or the all-sky USNO-B1 catalog, then determining (for each source) a best-fit stellar spectrum from the
+		  APASS all-sky catalog, and/or the all-sky USNO-B1 catalog, then determining (for each source) a best-fit stellar spectrum from the
 		  <a target="_blank" href="http://www.stsci.edu/hst/observatory/cdbs/pickles_atlas.html">Pickles Stellar Atlas</a>,
 		  and then producing synthetic photometry to augment the observed photometry in the catalogs. These photometric estimates
 		  can then be used on a per-source basis or used to calculate a systematic offset between observed count rates 
@@ -323,7 +322,7 @@
 		  </ul>
 	      
 		  If you would like a copy of the codebase, if you have any questions about it or the website, or if you
-		  have any comments or suggestions, simply shoot me an email - I'd like to hear from you! <br>
+		  have any comments or suggestions, simply shoot me an email: 
 		  <i>ishivvers (at) astro (dot) berkeley (dot) edu</i>
 		</p>
 		</section>

@@ -48,13 +48,13 @@ except:
 # SPEC_DICT contains all Pickles spectra in FLAM, as well as one array of lambda (Angstrom)
 SPEC_DICT = {}
 try:
-    spec_files = os.listdir( join(dirname(gs.__file__), 'model_spectra') )
+    spec_files = os.listdir( join(dirname(gs.__file__), 'model_spectra', 'pickles' ) )
     for fn in spec_files:
         try:
             n = int( re.findall('\d+', fn)[0] )
         except:
             continue
-        data = np.load( join(dirname(gs.__file__), 'model_spectra', fn) )
+        data = np.load( join(dirname(gs.__file__), 'model_spectra', 'pickles', fn) )
         SPEC_DICT[n] = data[1]
         if n == 1:
             SPEC_DICT['lam'] = data[0]
@@ -69,7 +69,7 @@ SPEC_DICT['lam'] = SPEC_DICT['lam'][ SPEC_DICT['lam']>2500 ]
 
 # initialize the database
 try:
-    DB = pm.MongoClient().PZserver
+    DB = pm.MongoClient().server
 except:
     raise IOError('cannot connect to database')
 
@@ -449,7 +449,7 @@ def show_results():
             ignore = 'usnob'
         
         try:
-            cat = gs.catalog( (ra,dec), fs, ignore=ignore ) #square box of size fs
+            cat = gs.catalog( ra, dec, fs, ignore=ignore ) #square box of size fs
         except ValueError:
             session['feedback'] = "Error: No good sources found in requested field."
             return redirect(url_for('show_upload'))
@@ -488,7 +488,7 @@ def show_results():
             ignore = 'usnob'
         
         try:
-            cat = gs.catalog( center, max(size), requested_coords, ignore=ignore )
+            cat = gs.catalog( center[0], center[1], max(size), requested_coords, ignore=ignore )
         except ValueError:
             session['feedback'] = "Error: No good sources found in requested field."
             return redirect(url_for('show_upload'))
@@ -538,7 +538,7 @@ def show_results():
             ignore = 'usnob'
         
         try:
-            cat = gs.catalog( center, max(size), requested_coords, ignore=ignore )
+            cat = gs.catalog( center[0], center[1], max(size), requested_coords, ignore=ignore )
         except ValueError:
             session['feedback'] = "Error: No good sources found in requested field."
             return redirect(url_for('show_upload'))
@@ -755,10 +755,10 @@ def serve_full_catalog():
                   '#       = 2: -> Model fit to USNOB-1 and 2-MASS\n' +\
                   "# " + "RA".ljust(10) + "DEC".ljust(12)
     for f in gs.ALL_FILTERS:
-        headstr += f.ljust(8)
-        headstr += (f+"_err").ljust(8)
-        headstr += (f+"_obs").ljust(6)
-    headstr += "Mode\n"
+        catalog_txt += f.ljust(8)
+        catalog_txt += (f+"_err").ljust(8)
+        catalog_txt += (f+"_obs").ljust(6)
+    catalog_txt += "Mode\n"
     
     coll = DB[ session['sid'] ]
     curs = coll['data'].find()
@@ -860,7 +860,7 @@ def api_handler():
         coll.insert( {"entry":"method", "method":1} )
         coll.insert( {"entry":"search_field", "ra":ra, "dec":dec, "fs":size} )
         try:
-            cat = gs.catalog( (ra,dec), size, ignore=ignore )
+            cat = gs.catalog( ra, dec, size, ignore=ignore )
         except ValueError:
             return Response( '{ success:false, message:"No suitable sources found in requested field."}',
                             mimetype='application/json')
@@ -925,7 +925,7 @@ def api_handler():
             center, size = gs.find_field( requested_coords )
             coll.insert( {"entry":"search_field", "ra":center[0], "dec":center[1], "fs":max(size)} )
             try:
-                cat = gs.catalog( center, max(size), requested_coords, ignore=ignore )
+                cat = gs.catalog( center[0], center[1], max(size), requested_coords, ignore=ignore )
             except ValueError:
                 return Response( '{ success:false, message:"No suitable sources found in requested field."}',
                                 mimetype='application/json')
@@ -979,7 +979,7 @@ def api_handler():
             center, size = gs.find_field( requested_coords )
             coll.insert( {"entry":"search_field", "ra":center[0], "dec":center[1], "fs":max(size)} )
             try:
-                cat = gs.catalog( center, max(size), requested_coords, ignore=ignore )
+                cat = gs.catalog( center[0], center[1], max(size), requested_coords, ignore=ignore )
             except ValueError:
                 return Response( '{ success:false, message:"No suitable sources found in requested field."}',
                                 mimetype='application/json')

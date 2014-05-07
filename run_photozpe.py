@@ -16,24 +16,5 @@ if __name__ == '__main__':
     except:
         pass
     
-    # working tornado example, though it seems like flask works just fine
-    '''
-    from tornado.wsgi import WSGIContainer
-    from tornado.httpserver import HTTPServer
-    from tornado.ioloop import IOLoop
-    from tornado import options
-    from time import strftime
-    # log to text files
-    import logging        
-    log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
-    log.addHandler( logging.handlers.TimedRotatingFileHandler('photo_zpe.log', when='W0') )
-    logging.info("#"*10+strftime(" %Y-%m-%d %H:%M:%S ")+"#"*10+"\n###### Starting tornado web server ######")
-    
-    http_server = HTTPServer(WSGIContainer(app))
-    http_server.listen( port )
-    IOLoop.instance().start()
-    '''
-    
     # start the simple flask server and let her see the larger world
-    app.run(host='0.0.0.0', port=port ) #set debug=True for debugging interface
+    app.run(host='0.0.0.0', port=port, debug=True ) #set debug=True for debugging interface

@@ -5,7 +5,8 @@ To have this visible from outside, make sure you map port 80 to the listening ap
 Guide: http://sebschmidt.blogspot.com/2011/07/nginx-how-to-setup-tornado-and-apache.html
 '''
 from PhotoZPE import app
-
+from werkzeug.contrib.fixers import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app)
 
 if __name__ == '__main__':
     from sys import argv

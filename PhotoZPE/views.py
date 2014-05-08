@@ -749,7 +749,7 @@ def serve_full_catalog():
                   '#  Mode = 0: -> Model fit to SDSS and 2-MASS\n' +\
                   '#       = 1: -> Model fit to APASS and 2-MASS\n' +\
                   '#       = 2: -> Model fit to USNOB-1 and 2-MASS\n' +\
-                  '# Link: '+webhost+'results?sid={}'.format(session['sid']) +\
+                  '# Link: '+web_host+'results?sid={}'.format(session['sid']) +\
                   "# " + "RA".ljust(10) + "DEC".ljust(12)
     for f in gs.ALL_FILTERS:
         catalog_txt += f.ljust(8)
@@ -881,7 +881,7 @@ def api_handler():
             return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
         elif response_type == 'ascii':
             ascii_out = build_ascii( json_list[1], ["Query ID: {}".format(json_list[0]['query_ID']),
-                                                    webhost+"results?sid={}".format(json_list[0]['query_ID'])] )
+                                                    web_host+"results?sid={}".format(json_list[0]['query_ID'])] )
             response = Response(ascii_out, mimetype='text/plain')
             response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
             return response
@@ -953,7 +953,7 @@ def api_handler():
                 return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
             elif response_type == 'ascii':
                 ascii_out = build_ascii( json_list[1], ["Query ID: {}".format(json_list[0]['query_ID']),
-                                                        webhost+"results?sid={}".format(json_list[0]['query_ID'])] )
+                                                        web_host+"results?sid={}".format(json_list[0]['query_ID'])] )
                 response = Response(ascii_out, mimetype='text/plain')
                 response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
                 return response
@@ -1016,7 +1016,7 @@ def api_handler():
                 return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
             elif response_type == 'ascii':
                 header = ["Query_ID: {}".format(json_list[0]['query_ID']), 
-                          webhost+"results?sid={}".format(json_list[0]['query_ID']),
+                          web_host+"results?sid={}".format(json_list[0]['query_ID']),
                           "Zeropoint: {}".format(json_list[0]['median_zeropoint']),
                           "M.A.D: {}".format(json_list[0]['MAD_zeropoint'])]
                 ascii_out = build_ascii( json_list[1], header )

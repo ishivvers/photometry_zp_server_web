@@ -749,7 +749,7 @@ def serve_full_catalog():
                   '#  Mode = 0: -> Model fit to SDSS and 2-MASS\n' +\
                   '#       = 1: -> Model fit to APASS and 2-MASS\n' +\
                   '#       = 2: -> Model fit to USNOB-1 and 2-MASS\n' +\
-                  '# Link: '+web_host+'results?sid={}'.format(session['sid']) +\
+                  '# Link: '+web_host+'results?sid={}\n'.format(session['sid']) +\
                   "# " + "RA".ljust(10) + "DEC".ljust(12)
     for f in gs.ALL_FILTERS:
         catalog_txt += f.ljust(8)

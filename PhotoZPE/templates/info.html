@@ -11,7 +11,7 @@
 	  <section id="PhotometricEstimates">
 	  <h2>Photometric Estimates and Zeropoint Offsets</h2>
 	   <p>This site was designed to produce accurate estimates of the 
-		  photometric zeropoint offset between a set of observations (with units of instrumental magnitudes) 
+		  photometric zeropoint offset between a set of observations (likely in units of instrumental magnitudes) 
 		  and a few standard photometric systems (i.e. <a target="_blank" href="http://www.sdss.org/">SDSS</a>, 
 		  <a target="_blank" href="http://www.aavso.org/apass">APASS</a>, 
 	 	  <a target="_blank" href="http://tdc-www.harvard.edu/catalogs/ub1.html">USNOB1</a>, 
@@ -215,6 +215,10 @@
 
 		<section id="coverage">
 		<h2>Coverage Maps</h2>
+		<p>
+		  This site provides mode 3 coverage of the entire sky and modes 1+2 coverage of 
+		  more than 90% of the sky.  The maps below show our coverage in detail.
+		</p>
 		<div class="row-fluid">
 			<div class="span10 offset1 pagination-centered">
 				<img src="static/img/mode1.png" height=400 alt="y error histogram">
@@ -228,13 +232,13 @@
 		<section id="api">
 		<h2>API</h2>
 		<p>
-		  This site offers an API as a webservice, so you can run interact with it programatically.
+		  This site offers an API as a webservice so that you can run interact with it programatically.
 		  Requests are sent as a URL over HTTP, and the results can be obtained
 		  in either JSON or a simple ASCII table format.  The same three methods of operation are available
 		  through the API as through the main website, and the website interface can be used to examine
 		  the results of any API request made within the last day.  Any posted files must be simple ASCII 
 		  tables, with the first two columns RA and Dec (decimal degrees), and a third column of instrumental
-		  magnitudes (if using mode 3).
+		  magnitudes (if using mode 3). If the ignore_usnob flag is included, mode 2 results are excluded.
 		</p>
 		<div class="row-fluid">
 		  <div class="span10 offset1">
@@ -289,6 +293,7 @@
 			  <strong>Optional:</strong>
 			  <ul>
 				<li><b>response:</b> ascii (default) or json</li>
+				<li><b>ignore_usnob:</b> (no argument)</li>
 			  </ul>
 			  <strong>Example:</strong><br>
 				<code>curl -F source_file=@YOUR_FILE 'http://classy.astro.berkeley.edu/api?method=3&amp;band=y&amp;response=ascii'</code>
@@ -332,8 +337,7 @@
 		<h2>Affiliations &amp; Acknowledgements</h2>
 		<p> Codebase and site developed by <a target="_blank" href="http://astro.berkeley.edu/~ishivvers/">Isaac Shivvers</a>
 			 at UC Berkeley, with generous help and advice from everyone at the Center for Time Domain Informatics (Josh Bloom, Adam Morgan,
-			 Adam Miller, Chris Klein, Brad Cenko, Ori Fox, Dan Starr, Joey Richards), and a huge thanks to Bill Boyd for computational
-			 resources and assistance.
+			 Adam Miller, Chris Klein, Brad Cenko, Ori Fox, Dan Starr, Joey Richards).
 		</p>
 		<div class="row-fluid">
 		<div class="span12 pagination-centered">

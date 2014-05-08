@@ -13,7 +13,7 @@
 			of the most commonly-used passbands. We use cataloged observations if they exist,
 			and provide modeled estimates if they don't. <br>
 			The goal: to provide a robust and simple way to estimate the photometric 
-			zeropoint of an astronomical image for any band in any part of the sky.<br>
+			zeropoint of an astronomical image for any commonly-used band in any part of the sky.<br>
 			Please read the <a href="{{ url_for('show_info') }}">info page</a> for
 			a complete description, a discussion of errors, and a few examples. <br><br>
 		
@@ -43,7 +43,7 @@
 				  <input type="text" name="DEC" class="input-small" placeholder="DEC (&deg;)">
 				  <input type="text" name="FS" class="input-small" placeholder="Field Size (&quot;)">
 				  <label class="checkbox">
-			        <input type="checkbox" name="allow_usnob"> Include USNOB-1
+			        <input type="checkbox" name="allow_usnob" checked> Include USNOB-1
 			      </label>
 				  <input type="hidden" name="method" value="1">
 				  <br><input type="submit" class="btn btn-primary" value="Submit" onclick="mark_disabled();"/>
@@ -103,7 +103,7 @@
 			  <a href="#" class="close fileupload-exists" data-dismiss="fileupload" style="float: none">×</a>
 			</div>
 			<label class="checkbox">
-		        <input type="checkbox" name="allow_usnob"> Include USNOB-1
+		        <input type="checkbox" name="allow_usnob" checked> Include USNOB-1
 		    </label>
 			<input type="hidden" name="method" value="2">
 			<input type="submit" class="btn btn-primary" value="Submit" onclick="mark_disabled();"/>
@@ -111,7 +111,7 @@
 		</div><!--/span-->
 		<div class="span4">
 			<h3>Catalog Matching + <br>Zeropoint Estimate</h3>
-			<p>Upload a star list with RA and Dec (decimal degrees) as the first two columns,
+			<p>Upload a star list with RA and Dec (decimal degrees) as the first two columns and
 				instrumental magnitudes as the third, and select the passband observed.</p>
 			<form action="upload" method="POST" enctype="multipart/form-data">
 	    	  <div class="fileupload fileupload-new" data-provides="fileupload">
@@ -136,7 +136,7 @@
 			  <option value="K">K</option>
 			</select>
 			<label class="checkbox">
-		        <input type="checkbox" name="allow_usnob"> Include USNOB-1
+		        <input type="checkbox" name="allow_usnob" checked> Include USNOB-1
 		    </label>
 			<input type="hidden" name="method" value="3">
 			<br><input type="submit" class="btn btn-primary" value="Submit"  onclick="mark_disabled();"/>

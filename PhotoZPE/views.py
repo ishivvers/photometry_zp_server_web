@@ -13,10 +13,6 @@ from subprocess import Popen, PIPE
 
 from my_code import get_SEDs as gs
 
-'''
-TO DO:
-+ Test allow_usnob interface for website and curl
-'''
 
 ############################################
 # DEFINITIONS AND INITIALIZATIONS
@@ -753,6 +749,7 @@ def serve_full_catalog():
                   '#  Mode = 0: -> Model fit to SDSS and 2-MASS\n' +\
                   '#       = 1: -> Model fit to APASS and 2-MASS\n' +\
                   '#       = 2: -> Model fit to USNOB-1 and 2-MASS\n' +\
+                  '# Link: '+webhost+'results?sid={}'.format(session['sid']) +\
                   "# " + "RA".ljust(10) + "DEC".ljust(12)
     for f in gs.ALL_FILTERS:
         catalog_txt += f.ljust(8)
@@ -872,7 +869,7 @@ def api_handler():
         
         # put the catalog entries both into the database and into a response
         json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
-                       'query_ID':session['sid'], 'website':web_host, 'bands':ALL_FILTERS}, []]
+                       'query_ID':session['sid'], 'link':web_host+"results?sid={}".format(session['sid']), 'bands':ALL_FILTERS}, []]
         for i in range(len(cat.SEDs)):
             coll['data'].insert( {"index":i, "sed":cat.SEDs[i], "errors":cat.full_errors[i], "observed":cat.observed[i].tolist(),\
                                   "mode":cat.modes[i], "coords":cat.coords[i], "models":int(cat.models[i])} )
@@ -883,7 +880,8 @@ def api_handler():
         if response_type == 'json':
             return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
         elif response_type == 'ascii':
-            ascii_out = build_ascii( json_list[1], "Query ID: {}".format(json_list[0]['query_ID']) )
+            ascii_out = build_ascii( json_list[1], ["Query ID: {}".format(json_list[0]['query_ID']),
+                                                    webhost+"results?sid={}".format(json_list[0]['query_ID'])] )
             response = Response(ascii_out, mimetype='text/plain')
             response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
             return response
@@ -940,7 +938,7 @@ def api_handler():
             
             # put into database
             json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
-                           'query_ID':session['sid'], 'website':web_host, 'bands':ALL_FILTERS}, []]
+                           'query_ID':session['sid'], 'link':web_host+"results?sid={}".format(session['sid']), 'bands':ALL_FILTERS}, []]
             i = 0
             for j,match in enumerate(matches):
                 if match >= 0:
@@ -954,7 +952,8 @@ def api_handler():
             if response_type == 'json':
                 return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
             elif response_type == 'ascii':
-                ascii_out = build_ascii( json_list[1], "Query ID: {}".format(json_list[0]['query_ID']) )
+                ascii_out = build_ascii( json_list[1], ["Query ID: {}".format(json_list[0]['query_ID']),
+                                                        webhost+"results?sid={}".format(json_list[0]['query_ID'])] )
                 response = Response(ascii_out, mimetype='text/plain')
                 response.headers['Content-Disposition'] = 'attachment; filename=catalog.txt'
                 return response
@@ -1001,7 +1000,7 @@ def api_handler():
             
             # put into database and into json or ascii format
             json_list = [ {'success':True, 'message':None, 'time':strftime("%H:%M %B %d, %Y"),\
-                           'query_ID':session['sid'], 'website':web_host, 'bands':ALL_FILTERS,\
+                           'query_ID':session['sid'], 'link':web_host+"results?sid={}".format(session['sid']), 'bands':ALL_FILTERS,\
                            'median_zeropoint':round(median_zp,2), 'MAD_zeropoint':round(mad_zp,2)}, []]
             i = 0
             for j,match in enumerate(matches):
@@ -1016,7 +1015,9 @@ def api_handler():
             if response_type == 'json':
                 return Response(json.dumps( json_list, indent=2 ), mimetype='application/json')
             elif response_type == 'ascii':
-                header = ["Query_ID: {}".format(json_list[0]['query_ID']), "Zeropoint: {}".format(json_list[0]['median_zeropoint']),\
+                header = ["Query_ID: {}".format(json_list[0]['query_ID']), 
+                          webhost+"results?sid={}".format(json_list[0]['query_ID']),
+                          "Zeropoint: {}".format(json_list[0]['median_zeropoint']),
                           "M.A.D: {}".format(json_list[0]['MAD_zeropoint'])]
                 ascii_out = build_ascii( json_list[1], header )
                 response = Response(ascii_out, mimetype='text/plain')

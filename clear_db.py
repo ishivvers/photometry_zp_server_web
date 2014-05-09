@@ -10,7 +10,7 @@ import pymongo as pm
 from time import time
 
 age_cut = 1 #days
-DB = pm.MongoClient().PZserver
+DB = pm.MongoClient().server
 
 now = int(time())
 time_cut = now - age_cut*60*60*24

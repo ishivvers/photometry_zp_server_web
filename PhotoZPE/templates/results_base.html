@@ -32,7 +32,7 @@
 //// THE SPECTRUM PLOT ////
 
 // margins & size
-var margin = {top: 10, right: 10, bottom: 20, left: 50},
+var margin = {top: 10, right: 10, bottom: 40, left: 50},
     width = 700 - margin.left - margin.right,
     height = 300 - margin.top - margin.bottom;
 
@@ -71,7 +71,7 @@ var svg = d3.select("#main_hero").append("svg")
 svg.append("g")
     .attr("class", "x axis")
     .attr("transform", "translate(0," + height + ")");
-svg.append("g")
+var yAxisimg = svg.append("g")
     .attr("class", "y axis");
 svg.append("path")
     .attr("class", "line");
@@ -79,8 +79,8 @@ svg.append("path")
 svg.append("text")
 	.attr("class", "x label")
 	.attr("text-anchor", "end")
-	.attr("x", width-15)
-	.attr("y", height-8)
+	.attr("x", width)
+	.attr("y", height+30)
 	.text("wavelength (\u212B)")
 	.attr("opacity", 0.0);
 svg.append("text")
@@ -128,9 +128,14 @@ function draw_spectrum( spec_id, sed_index, ra, dec ) {
         draw_scatterplot( sed_index );
         // draw the image
         draw();
-        // and update the text
+        // update the text
         update_text(sed_index, spec_id, ra, dec);
-	});
+        // and rotate the yAxis labels to fit better
+	yAxisimg.selectAll("text")
+            .attr("transform", function(d) {
+                return "rotate(-45)translate(5," + (-this.getBBox().height/1.5) + ")";
+            });
+        });
 };
 
 function draw_scatterplot( sed_index ) {

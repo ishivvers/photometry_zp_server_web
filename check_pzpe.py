@@ -45,7 +45,7 @@ try:
     # also test that the whole chain works, by making a quick API call
     res = Popen("hostname",shell=True,stdout=PIPE,stderr=PIPE)
     hostname,err = res.communicate()
-    if hostname.strip() == 'UCBerk':
+    if hostname.strip() == 'classy':
         targetfile = '/home/isaac/Downloads/tmp.txt'
     elif hostname.strip() == 'lupus.berkeley.edu':
         targetfile = '/o/ishivvers/scratch/tmp.txt'

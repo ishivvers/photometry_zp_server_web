@@ -106,7 +106,13 @@ def home():
     # homepage simply points to upload
     return redirect(url_for('show_upload'))
 
-
+@app.errorhandler(Exception)
+@app.errorhandler(500)
+def errorpage(e):
+    feedback = "Something went wrong with your request, please try again! "+\
+                "Contact me at the link above if the problem persists."
+    return render_template( "upload.html", feedback=feedback ), 500
+    
 ############################################
 # UPLOAD
 ############################################

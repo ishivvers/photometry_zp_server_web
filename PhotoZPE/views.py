@@ -11,7 +11,7 @@ import pyfits
 import pymongo as pm
 from subprocess import Popen, PIPE
 
-from my_code import get_SEDs as gs
+from photometry_zeropoint_server import get_SEDs as gs
 
 
 ############################################
